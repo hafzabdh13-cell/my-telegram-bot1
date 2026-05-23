@@ -13,3 +13,4 @@ motor
 pymongo
 gdown
 cryptography
+gTTS
