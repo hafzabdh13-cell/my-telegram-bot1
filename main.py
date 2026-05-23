@@ -1,8 +1,22 @@
 import os
 import sys
+import subprocess
+import importlib
+
+# ================= التثبيت التلقائي للمكتبات المفقودة =================
+def install_requirements():
+    required = ["pyTelegramBotAPI", "Flask", "waitress"]
+    for lib in required:
+        try:
+            importlib.import_module(lib.replace("pyTelegramBotAPI", "telebot"))
+        except ImportError:
+            print(f"🔄 جاري تثبيت المكتبة: {lib}")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", lib])
+
+install_requirements()
+
 import telebot
 import sqlite3
-import subprocess
 import ast
 from datetime import datetime, timedelta
 from flask import Flask, request
