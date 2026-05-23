@@ -9,7 +9,6 @@ pyrogram
 tgcrypto
 pillow
 beautifulsoup4
-sqlite3
 motor
 pymongo
 gdown
