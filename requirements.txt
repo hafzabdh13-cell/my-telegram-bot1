@@ -1,3 +1,16 @@
 pyTelegramBotAPI
 Flask
 waitress
+aiohttp
+requests
+python-telegram-bot
+telethon
+pyrogram
+tgcrypto
+pillow
+beautifulsoup4
+sqlite3
+motor
+pymongo
+gdown
+cryptography
