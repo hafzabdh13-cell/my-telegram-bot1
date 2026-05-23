@@ -3,7 +3,7 @@ import sys
 import subprocess
 import importlib
 
-# ================= التثبيت التلقائي للمكتبات المفقودة =================
+# ================= التثبيت التلقائي للمكتبات المفقودة للنظام =================
 def install_requirements():
     required = ["pyTelegramBotAPI", "Flask", "waitress"]
     for lib in required:
@@ -22,6 +22,17 @@ from datetime import datetime, timedelta
 from flask import Flask, request
 from telebot import types
 from waitress import serve
+
+# ================= دالة تثبيت مكتبات بوتات المستخدمين =================
+def install_user_requirements(bot_dir):
+    req_file = os.path.join(bot_dir, "requirements.txt")
+    if os.path.exists(req_file):
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+            return True, "✅ تم تثبيت مكتبات البوت من requirements.txt"
+        except Exception as e:
+            return False, f"❌ فشل تثبيت المكتبات: {str(e)}"
+    return True, "ℹ️ لا يوجد ملف requirements.txt"
 
 # ================= FLASK SERVER FOR 24/7 ACTIVE =================
 app = Flask(__name__)
@@ -91,7 +102,6 @@ def create_user_and_check_free(user_id):
     cursor.execute("SELECT free_used FROM users WHERE user_id=?", (user_id,))
     row = cursor.fetchone()
     if not row:
-        # عند التسجيل أول مرة يمنحه 24 ساعة مجانية تلقائياً
         expire_time = datetime.now() + timedelta(days=1)
         expire_str = expire_time.strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("INSERT INTO users (user_id, stars, expire, free_used, last_free_time) VALUES (?, ?, ?, ?, ?)", 
@@ -364,7 +374,8 @@ def handle_call(call):
     elif call.data.startswith("run_"):
         bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
-        path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
+        bot_dir = f"{BASE_DIR}/{uid}/bot{bot_num}"
+        path = f"{bot_dir}/bot.py"
         
         if not os.path.exists(path):
             bot.answer_callback_query(call.id, f"❌ لم تقم برفع ملف الكود للسيرفر رقم {bot_num}!", show_alert=True)
@@ -373,13 +384,11 @@ def handle_call(call):
             bot.answer_callback_query(call.id, f"⚠️ السيرفر {bot_num} يعمل بالفعل!", show_alert=True)
             return
 
-        if len(active_processes) >= 15:
-            oldest_key = next(iter(active_processes))
-            try:
-                active_processes[oldest_key].terminate()
-            except:
-                pass
-            del active_processes[oldest_key]
+        # فحص وتثبيت المكتبات التابع للبوت قبل التشغيل
+        success, msg = install_user_requirements(bot_dir)
+        if not success:
+            bot.answer_callback_query(call.id, msg, show_alert=True)
+            return
 
         try:
             optimized_env = os.environ.copy()
@@ -388,11 +397,11 @@ def handle_call(call):
             
             proc = subprocess.Popen(
                 [sys.executable, "bot.py"],
-                cwd=os.path.dirname(path),
+                cwd=bot_dir,
                 env=optimized_env
             )
             active_processes[process_key] = proc  
-            bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح وبأداء مخصص وموفر للرام!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
+            bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         except Exception as e:
             bot.answer_callback_query(call.id, f"❌ فشل تشغيل البوت: {str(e)}", show_alert=True)
 
@@ -416,7 +425,7 @@ def handle_call(call):
 
     elif call.data.startswith("upload_"):
         bot_num = call.data.split("_")[1]
-        msg = bot.send_message(uid, f"📤 **أرسل الآن ملفك البرمجي الموجه للسيرفر رقم ({bot_num}).**")
+        msg = bot.send_message(uid, f"📤 **أرسل الآن ملفك البرمجي (bot.py) أو ملف المكتبات (requirements.txt) للسيرفر رقم ({bot_num}).**")
         bot.register_next_step_handler(msg, save_bot_file, bot_num)
 
     elif call.data.startswith("files_"):
@@ -451,7 +460,7 @@ def got_payment(message):
         set_subscription(uid, days=365)
         bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 650 نجمة وتفعيل الباقة السنوية (365 يوم) بنجاح!**", parse_mode="Markdown")
 
-# ================= HANDLERS FOR MANUAL INVOICES (ADMIN CAPTION) =================
+# ================= HANDLERS FOR MANUAL INVOICES =================
 def receive_manual_invoice(message, package_days, price):
     uid = message.chat.id
     markup = admin_approval_keyboard(uid, package_days, price)
@@ -482,18 +491,21 @@ def save_bot_file(message, bot_num):
     try:
         user_bot_path = f"{BASE_DIR}/{uid}/bot{bot_num}"
         os.makedirs(user_bot_path, exist_ok=True)
-        file_path = f"{user_bot_path}/bot.py"
+        file_path = f"{user_bot_path}/{message.document.file_name}"
         
         finfo = bot.get_file(message.document.file_id)
         downloaded = bot.download_file(finfo.file_path) 
         with open(file_path, "wb") as f:
             f.write(downloaded)
         
-        is_ok, msg = check_code_syntax(file_path)
-        if is_ok:
-            bot.send_message(uid, f"✅ **تم حفظ وتثبيت كودك بنجاح في السيرفر {bot_num} باسم `bot.py`!**\n{msg}", parse_mode="Markdown")
+        if message.document.file_name == "bot.py":
+            is_ok, msg = check_code_syntax(file_path)
+            if is_ok:
+                bot.send_message(uid, f"✅ **تم حفظ وتثبيت كودك بنجاح في السيرفر {bot_num} باسم `bot.py`!**\n{msg}", parse_mode="Markdown")
+            else:
+                bot.send_message(uid, f"⚠️ **تنبيه برمجي:**\n{msg}\nيرجى إصلاح الكود وإعادة رفعه.")
         else:
-            bot.send_message(uid, f"⚠️ **تنبيه برمجي:**\n{msg}\nيرجى إصلاح الكود وإعادة رفعه.")
+            bot.send_message(uid, f"✅ تم حفظ الملف: `{message.document.file_name}` بنجاح.", parse_mode="Markdown")
             
     except Exception as e:
         bot.send_message(uid, f"❌ حدث خطأ أثناء حفظ الملف: {str(e)}")
