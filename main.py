@@ -354,13 +354,20 @@ def handle_call(call):
             bot.answer_callback_query(call.id, f"⚠️ السيرفر {bot_num} يعمل بالفعل!", show_alert=True)
             return
 
-        # ---- 1️⃣ فحص أخطاء علامات التنصيص والأقواس (Syntax errors) قبل تشغيل الملف ----
+        # ---- 1️⃣ فحص أخطاء الكود (Syntactic errors) ----
         try:
             py_compile.compile(path, doraise=True)
         except py_compile.PyCompileError as syntax_err:
-            error_msg = str(syntax_err).split('File "')[1] if 'File "' in str(syntax_err) else str(syntax_err)
-            bot.send_message(uid, f"❌ **فشل تشغيل الملف! تم اكتشاف خطأ برمجي (نقص تنصيص أو أقواس في الكود):**\n\n```text\n{error_msg}\n
-```", parse_mode="Markdown")
+            # عرض الخطأ بشكل أوضح للمستخدم
+            error_lines = str(syntax_err).split('\n')
+            clean_error = ""
+            for line in error_lines:
+                if 'SyntaxError' in line or 'unterminated' in line or 'EOL' in line:
+                    clean_error = line.strip()
+                    break
+            if not clean_error:
+                clean_error = str(syntax_err)[:500]
+            bot.send_message(uid, f"❌ **فشل تشغيل الملف! تم اكتشاف خطأ برمجي في كودك:**\n\n```\n{clean_error}\n```\n📍 تأكد من إغلاق جميع علامات التنصيص `\"` أو `'` بشكل صحيح.", parse_mode="Markdown")
             bot.answer_callback_query(call.id)
             return
 
@@ -374,7 +381,6 @@ def handle_call(call):
             optimized_env["PYTHONUNBUFFERED"] = "1"
             optimized_env["PYTHONDONTWRITEBYTECODE"] = "1"
             
-            # ---- 2️⃣ تشغيل الملف مع فتح قنوات سحب الأخطاء PIPE بدلاً من التوجيه للعدم ----
             proc = subprocess.Popen(
                 [sys.executable, path], 
                 stdout=subprocess.PIPE, 
@@ -383,18 +389,16 @@ def handle_call(call):
                 text=True
             )
             
-            # الانتظار قليلاً للتأكد إن كان الملف سينهار بسبب نقص المكاتب
             time.sleep(2)
             
-            # في حال توقف البوت فوراً نتيجة خطأ تشغيل (مثل نقص مكتبة)
             if proc.poll() is not None:
                 stdout, stderr = proc.communicate()
-                bot.send_message(uid, f"❌ **انتهى البوت فور تشغيله بسبب خطأ داخلي (غالباً نقص مكاتب أو توكن خطأ):**\n\n```text\n{stderr[:3000]}\n```", parse_mode="Markdown")
+                bot.send_message(uid, f"❌ **انتهى البوت فور تشغيله بسبب خطأ داخلي:**\n\n```\n{stderr[:3000]}\n```", parse_mode="Markdown")
                 bot.answer_callback_query(call.id)
                 return
 
             active_processes[process_key] = proc  
-            bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح وبأداء مخصص وموفر للرام!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
+            bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         except Exception as e:
             bot.answer_callback_query(call.id, f"❌ فشل تشغيل البوت: {str(e)}", show_alert=True)
 
