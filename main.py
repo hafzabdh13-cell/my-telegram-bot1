@@ -3,6 +3,7 @@ import sys
 import telebot
 import sqlite3
 import subprocess
+import ast
 from datetime import datetime, timedelta
 from flask import Flask, request
 from telebot import types
@@ -59,13 +60,25 @@ def init_db():
 init_db()
 
 # ================= CORE FUNCTIONS =================
+def check_code_syntax(file_path):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            code = f.read()
+        ast.parse(code)
+        return True, "✅ الكود سليم ولا يحتوي على أخطاء برمجية."
+    except SyntaxError as e:
+        return False, f"❌ خطأ في الكود (Syntax Error) في السطر {e.lineno}: {e.msg}"
+    except Exception as e:
+        return False, f"⚠️ خطأ غير متوقع: {str(e)}"
+
 def create_user_and_check_free(user_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT free_used FROM users WHERE user_id=?", (user_id,))
     row = cursor.fetchone()
     if not row:
-        expire_time = datetime.now() + timedelta(hours=1)
+        # عند التسجيل أول مرة يمنحه 24 ساعة مجانية تلقائياً
+        expire_time = datetime.now() + timedelta(days=1)
         expire_str = expire_time.strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("INSERT INTO users (user_id, stars, expire, free_used, last_free_time) VALUES (?, ?, ?, ?, ?)", 
                        (user_id, 0, expire_str, 1, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -173,7 +186,6 @@ def price_plans_keyboard():
     m.add(types.InlineKeyboardButton("💸 حوالة يدوية (الامتياز / الكريمي)", callback_data="manual_menu_bank"))
     return m
 
-# قائمة اختيار باقات النجوم التلقائية
 def stars_packages_keyboard():
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
@@ -184,7 +196,6 @@ def stars_packages_keyboard():
     m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_shop"))
     return m
 
-# قائمة اختيار الباقة اليدوية بأسعار الدولار
 def manual_packages_keyboard(method):
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
@@ -255,12 +266,12 @@ def active_free_day(message):
         can_get_free = True
         
     if can_get_free:
-        set_subscription(uid, hours=1)
+        set_subscription(uid, days=1)
         cursor.execute("UPDATE users SET last_free_time=? WHERE user_id=?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), uid))
         conn.commit()
-        bot.send_message(uid, "🎁 **تهانينا! تم تفعيل فترة مجانية صالحة لمدة ساعة واحدة بنجاح لتجربة السيرفرات.**", parse_mode="Markdown")
+        bot.send_message(uid, "🎁 **تهانينا! تم تفعيل السيرفرات بالخطة المجانية الصالحة لمدة 24 ساعة كاملة بنجاح!**", parse_mode="Markdown")
     else:
-        bot.send_message(uid, "⚠️ **عذراً، لقد استهلكت مكافأتك المجانية اليوم! يمكنك المحاولة مجدداً بعد مرور 24 ساعة.**")
+        bot.send_message(uid, "⚠️ **عذراً، باقتك المجانية لليوم نشطة بالفعل أو لم تمر 24 ساعة على تفعيلك السابق!**")
     conn.close()
 
 # ================= CALLBACK QUERY HANDLER =================
@@ -269,7 +280,6 @@ def handle_call(call):
     uid = call.message.chat.id
     mid = call.message.message_id
     
-    # متجر النجوم التلقائي
     if call.data == "stars_shop_menu":
         bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
         bot.answer_callback_query(call.id)
@@ -286,7 +296,6 @@ def handle_call(call):
         bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
         bot.answer_callback_query(call.id)
         
-    # متجر الدفع اليدوي
     elif call.data == "manual_menu_jaib":
         bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب:**\nاختر الباقة المراد الاشتراك بها لمعاينة السعر بالدولار وما يعادله باليمني:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
         bot.answer_callback_query(call.id)
@@ -312,7 +321,6 @@ def handle_call(call):
         bot.register_next_step_handler(msg, receive_manual_invoice, days, price)
         bot.answer_callback_query(call.id)
 
-    # لوحة تحكم المطور حافظ (قبول / رفض)
     elif call.data.startswith("admin_accept_"):
         parts = call.data.split("_")
         days, target_user = int(parts[2]), int(parts[3])
@@ -325,7 +333,6 @@ def handle_call(call):
         bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
         bot.send_message(target_user, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
 
-    # حماية السيرفرات والأوامر السحابية
     elif call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data == "protect":
         if not is_sub_active(uid):
             bot.answer_callback_query(call.id, "⚠️ عذراً عزيزي، اشتراكك منتهي أو غير مفعّل! اشحن عبر النجوم أو أرسل سند التحويل اليدوي.", show_alert=True)
@@ -354,14 +361,22 @@ def handle_call(call):
 
         if len(active_processes) >= 15:
             oldest_key = next(iter(active_processes))
-            active_processes[oldest_key].terminate()
+            try:
+                active_processes[oldest_key].terminate()
+            except:
+                pass
             del active_processes[oldest_key]
 
         try:
             optimized_env = os.environ.copy()
             optimized_env["PYTHONUNBUFFERED"] = "1"
             optimized_env["PYTHONDONTWRITEBYTECODE"] = "1"
-            proc = subprocess.Popen([sys.executable, path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=optimized_env)
+            
+            proc = subprocess.Popen(
+                [sys.executable, "bot.py"],
+                cwd=os.path.dirname(path),
+                env=optimized_env
+            )
             active_processes[process_key] = proc  
             bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح وبأداء مخصص وموفر للرام!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         except Exception as e:
@@ -371,8 +386,16 @@ def handle_call(call):
         bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
         if process_key in active_processes and active_processes[process_key].poll() is None:
-            active_processes[process_key].terminate()  
-            del active_processes[process_key]
+            try:
+                active_processes[process_key].terminate()  
+                active_processes[process_key].wait(timeout=2)
+            except:
+                try:
+                    active_processes[process_key].kill()
+                except:
+                    pass
+            if process_key in active_processes:
+                del active_processes[process_key]
             bot.edit_message_text(f"🛑 **تم إيقاف السيرفر رقم ({bot_num}) بنجاح.**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         else:
             bot.answer_callback_query(call.id, f"⚠️ السيرفر رقم {bot_num} متوقف حالياً!", show_alert=True)
@@ -445,11 +468,19 @@ def save_bot_file(message, bot_num):
     try:
         user_bot_path = f"{BASE_DIR}/{uid}/bot{bot_num}"
         os.makedirs(user_bot_path, exist_ok=True)
+        file_path = f"{user_bot_path}/bot.py"
+        
         finfo = bot.get_file(message.document.file_id)
         downloaded = bot.download_file(finfo.file_path) 
-        with open(f"{user_bot_path}/bot.py", "wb") as f:
+        with open(file_path, "wb") as f:
             f.write(downloaded)
-        bot.send_message(uid, f"✅ **تم حفظ وتثبيت كودك بنجاح في السيرفر {bot_num} باسم `bot.py`!**", parse_mode="Markdown")
+        
+        is_ok, msg = check_code_syntax(file_path)
+        if is_ok:
+            bot.send_message(uid, f"✅ **تم حفظ وتثبيت كودك بنجاح في السيرفر {bot_num} باسم `bot.py`!**\n{msg}", parse_mode="Markdown")
+        else:
+            bot.send_message(uid, f"⚠️ **تنبيه برمجي:**\n{msg}\nيرجى إصلاح الكود وإعادة رفعه.")
+            
     except Exception as e:
         bot.send_message(uid, f"❌ حدث خطأ أثناء حفظ الملف: {str(e)}")
 
@@ -458,7 +489,7 @@ def setup_webhook_route():
     bot.remove_webhook()
     render_external_url = os.environ.get("RENDER_EXTERNAL_URL")
     if not render_external_url:
-        return "⚠️ خطأ: تأكد من تشغيل المشروع كـ Web Service في Render لتفعيل الرابط التلقائي.", 400
+        return "⚠️ خطأ: تأكد من تشغيل المشروع كـ Web Service in Render لتفعيل الرابط التلقائي.", 400
     success = bot.set_webhook(url=f"{render_external_url}/{TOKEN}")
     if success:
         return f"🟢 تم ربط البوت بالسيرفر بنجاح عبر الـ Webhook الخارجي!<br>الرابط: {render_external_url}", 200
