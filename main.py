@@ -502,5 +502,16 @@ def setup_webhook_route():
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 10000))
+    
+    # تعيين webhook تلقائياً عند بدء التشغيل (بدون الحاجة لزيارة /set_webhook)
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if render_url:
+        webhook_url = f"{render_url}/{TOKEN}"
+        bot.remove_webhook()
+        bot.set_webhook(url=webhook_url)
+        print(f"✅ Webhook set to {webhook_url}")
+    else:
+        print("⚠️ RENDER_EXTERNAL_URL not found. Webhook not set automatically. Visit /set_webhook manually.")
+    
     print(f"📡 جاري تشغيل المنصة عبر Waitress على المنفذ: {port}")
     serve(app, host='0.0.0.0', port=port)
