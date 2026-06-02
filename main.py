@@ -1,40 +1,46 @@
 import os
 import sys
 import time
-import logging
 import telebot
 import sqlite3
 import subprocess
 import py_compile
-import zipfile
 from datetime import datetime, timedelta
-from flask import Flask, request, send_from_directory, abort
+from flask import Flask, request
 from telebot import types
 from waitress import serve
 
-# ================= إعدادات التسجيل =================
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
-)
-logger = logging.getLogger("VirtualServerPro")
-
-# ================= FLASK SERVER =================
+# ================= FLASK SERVER FOR 24/7 ACTIVE =================
 app = Flask(__name__)
 
 TOKEN = os.environ.get("BOT_TOKEN", "8790387996:AAFB6u4jHWrtsGPnECIxLWxiyJm8rgrV5Vs")
+
+@app.route("/")
+def home():
+    return "🟢 Virtual Server Pro Is Running Successfully 24/7!"
+
+@app.route(f"/{TOKEN}", methods=["POST"])
+def telegram_webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "OK", 200
+    else:
+        return "Invalid Request", 403
+
+# البيانات الخاصة بك يا حافظ
 ADMIN_ID = 7484089854
-OWNER_USER = "@HAFZAbdh"
+OWNER_USER = "@HAFZAbdh"  
 OWNER_FULL_NAME = "حافظ عبده احمد عبدالرحمن احمد"
-MY_JAIB_ACCOUNT = "784714890"
+MY_JAIB_ACCOUNT = "784714890" 
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
 BASE_DIR = "hosted_bots"
 os.makedirs(BASE_DIR, exist_ok=True)
 active_processes = {}
 
-# ================= قاعدة البيانات =================
+# ================= DATABASE SYSTEM =================
 DB_NAME = "hosting_pro.db"
 
 def init_db():
@@ -51,11 +57,10 @@ def init_db():
     """)
     conn.commit()
     conn.close()
-    logger.info("Database ready.")
 
 init_db()
 
-# ================= دوال الاشتراك =================
+# ================= CORE FUNCTIONS =================
 def create_user_and_check_free(user_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -77,6 +82,7 @@ def is_sub_active(user_id):
     cursor.execute("SELECT expire FROM users WHERE user_id=?", (user_id,))
     user = cursor.fetchone()
     conn.close()
+    
     if not user or not user[0]: 
         return False
     try:
@@ -89,14 +95,17 @@ def set_subscription(user_id, days=0, hours=0):
     cursor = conn.cursor()
     cursor.execute("SELECT expire FROM users WHERE user_id=?", (user_id,))
     user = cursor.fetchone()
+    
     current_expire = None
     if user and user[0]:
         try: current_expire = datetime.strptime(user[0], "%Y-%m-%d %H:%M:%S")
         except: pass
+
     if current_expire and current_expire > datetime.now():
         expire_time = current_expire + timedelta(days=days, hours=hours)
     else:
         expire_time = datetime.now() + timedelta(days=days, hours=hours)
+        
     cursor.execute("UPDATE users SET expire=? WHERE user_id=?", (expire_time.strftime("%Y-%m-%d %H:%M:%S"), user_id))
     conn.commit()
     conn.close()
@@ -109,12 +118,14 @@ def get_remaining_time(user_id):
     cursor.execute("SELECT expire FROM users WHERE user_id=?", (user_id,))
     user = cursor.fetchone()
     conn.close()
+    
     if not user or not user[0]: 
         return "❌ غير مشترك"
     try:
         rem = datetime.strptime(user[0], "%Y-%m-%d %H:%M:%S") - datetime.now()
         if rem.total_seconds() < 0:
             return "❌ منتهي الصلاحية"
+        
         hours_total = rem.seconds // 3600
         minutes_total = (rem.seconds % 3600) // 60
         if rem.days > 0:
@@ -124,7 +135,7 @@ def get_remaining_time(user_id):
     except:
         return "❌ خطأ في النظام"
 
-# ================= لوحات المفاتيح =================
+# ================= SMART KEYBOARDS =================
 def start_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("🎛️ فتح لوحة التحكم السحابية"))
@@ -136,11 +147,10 @@ def main_menu(user_id):
     m = types.InlineKeyboardMarkup(row_width=2)
     m.add(
         types.InlineKeyboardButton("📁 إدارة الملفات", callback_data="choose_files"),
-        types.InlineKeyboardButton("📤 رفع ملف لأي سيرفر", callback_data="choose_upload"),
-        types.InlineKeyboardButton("🌐 رفع موقع ويب", callback_data="upload_website"),
+        types.InlineKeyboardButton("📤 رفع كود جديد (bot.py)", callback_data="choose_upload"),
         types.InlineKeyboardButton("🚀 تشغيل سيرفر", callback_data="choose_run"),
         types.InlineKeyboardButton("🛑 إيقاف سيرفر", callback_data="choose_stop"),
-        types.InlineKeyboardButton("🌐 رابط الموقع", callback_data="web_link"),
+        types.InlineKeyboardButton("🛡️ فحص الحماية والاستقرار", callback_data="protect"),
         types.InlineKeyboardButton("📊 حالة الخادم العام", callback_data="status")
     )
     owner_link = OWNER_USER.replace("@", "")
@@ -149,8 +159,12 @@ def main_menu(user_id):
 
 def bot_selector_menu(action):
     m = types.InlineKeyboardMarkup(row_width=2)
-    for i in range(1, 5):
-        m.add(types.InlineKeyboardButton(f"🤖 سيرفر {i}", callback_data=f"{action}_{i}"))
+    m.add(
+        types.InlineKeyboardButton("🤖 سيرفر 1", callback_data=f"{action}_1"),
+        types.InlineKeyboardButton("🤖 سيرفر 2", callback_data=f"{action}_2"),
+        types.InlineKeyboardButton("🤖 سيرفر 3", callback_data=f"{action}_3"),
+        types.InlineKeyboardButton("🤖 سيرفر 4", callback_data=f"{action}_4")
+    )
     m.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="back"))
     return m
 
@@ -161,6 +175,7 @@ def price_plans_keyboard():
     m.add(types.InlineKeyboardButton("💸 حوالة يدوية (الامتياز / الكريمي)", callback_data="manual_menu_bank"))
     return m
 
+# قائمة اختيار باقات النجوم التلقائية
 def stars_packages_keyboard():
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
@@ -171,6 +186,7 @@ def stars_packages_keyboard():
     m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_shop"))
     return m
 
+# قائمة اختيار الباقة اليدوية بأسعار الدولار
 def manual_packages_keyboard(method):
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
@@ -190,33 +206,36 @@ def admin_approval_keyboard(target_id, package_days, price):
     )
     return m
 
-# ================= أمر البداية =================
+# ================= HANDLERS =================
 @bot.message_handler(commands=["start"])
 def start(message):
     uid = message.chat.id
     create_user_and_check_free(uid)
     is_active = is_sub_active(uid)
+    status_icon = "🟢 مفعّل بنجاح" if is_active else "🔴 غير مفعل / منتهي"
     time_rem = get_remaining_time(uid)
+    
     welcome = f"""
 ✨ **مرحباً بك في مجمع استضافات VIRTUAL SERVER PRO** ✨
 ━━━━━━━━━━━━━━━━━━━━
-⚙️ **تشغيل بوتات + استضافة مواقع ويب + رفع أي ملفات بدون قيود.**
+⚙️ **أقوى منصة سحابية لتشغيل حتى 4 بوتات تلجرام معاً 24 ساعة دون انقطاع.**
 
-👤 {message.from_user.first_name}
-🆔 `{uid}`
-🛡️ {'🟢 مفعّل' if is_active else '🔴 غير مفعل'}
-⏳ {time_rem}
+👤 **العضو:** {message.from_user.first_name}
+🆔 **المعرف الخاص بك:** `{uid}`
+🛡️ **حالة السيرفر:** {status_icon}
+⏳ **فترة الصلاحية:** `{time_rem}`
 ━━━━━━━━━━━━━━━━━━━━
+👇 **اختر من الأزرار بالأسفل لبدء إدارة وتفعيل خدماتك السحابية:**
 """
     bot.send_message(uid, welcome, parse_mode="Markdown", reply_markup=start_keyboard())
 
 @bot.message_handler(func=lambda msg: msg.text == "🎛️ فتح لوحة التحكم السحابية")
 def open_panel(message):
-    bot.send_message(message.chat.id, "💎 **لوحة التحكم الاحترافية:**", reply_markup=main_menu(message.chat.id))
+    bot.send_message(message.chat.id, "💎 **لوحة التحكم بالخدمات السحابية المتعددة (الحد الأقصى: 4 بوتات):**", reply_markup=main_menu(message.chat.id), parse_mode="Markdown")
 
 @bot.message_handler(func=lambda msg: msg.text == "💳 تفعيل حسابي وشحن الرصيد")
 def open_shop(message):
-    bot.send_message(message.chat.id, "⚙️ **اختر وسيلة الدفع:**", reply_markup=price_plans_keyboard())
+    bot.send_message(message.chat.id, "⚙️ **يرجى اختيار وسيلة الدفع والشحن المناسبة لك:**", reply_markup=price_plans_keyboard())
 
 @bot.message_handler(func=lambda msg: msg.text == "🎁 تفعيل الخدمة المجانية اليومية")
 def active_free_day(message):
@@ -225,6 +244,7 @@ def active_free_day(message):
     cursor = conn.cursor()
     cursor.execute("SELECT last_free_time FROM users WHERE user_id=?", (uid,))
     row = cursor.fetchone()
+    
     can_get_free = False
     if row and row[0]:
         try:
@@ -235,230 +255,181 @@ def active_free_day(message):
             can_get_free = True
     else:
         can_get_free = True
+        
     if can_get_free:
         set_subscription(uid, hours=1)
         cursor.execute("UPDATE users SET last_free_time=? WHERE user_id=?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), uid))
         conn.commit()
-        bot.send_message(uid, "🎁 **تم تفعيل ساعة مجانية!**")
+        bot.send_message(uid, "🎁 **تهانينا! تم تفعيل فترة مجانية صالحة لمدة ساعة واحدة بنجاح لتجربة السيرفرات.**", parse_mode="Markdown")
     else:
-        bot.send_message(uid, "⚠️ استهلكت المجانية اليوم. عد بعد 24 ساعة.")
+        bot.send_message(uid, "⚠️ **عذراً، لقد استهلكت مكافأتك المجانية اليوم! يمكنك المحاولة مجدداً بعد مرور 24 ساعة.**")
     conn.close()
 
-# ================= معالجة الأزرار =================
+# ================= CALLBACK QUERY HANDLER =================
 @bot.callback_query_handler(func=lambda call: True)
 def handle_call(call):
     uid = call.message.chat.id
     mid = call.message.message_id
-
-    # ---------- الدفع بالنجوم ----------
+    
+    # متجر النجوم التلقائي
     if call.data == "stars_shop_menu":
-        bot.edit_message_text("⭐ **متجر النجوم:**", uid, mid, reply_markup=stars_packages_keyboard())
-    elif call.data == "buy_stars_30":
-        bot.send_invoice(uid, "اشتراك شهري", "30 يوم", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
-    elif call.data == "buy_stars_90":
-        bot.send_invoice(uid, "اشتراك ربع سنوي", "90 يوم", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
-    elif call.data == "buy_stars_365":
-        bot.send_invoice(uid, "اشتراك سنوي", "365 يوم", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
+        bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
+        bot.answer_callback_query(call.id)
 
-    # ---------- الدفع اليدوي ----------
+    elif call.data == "buy_stars_30":
+        bot.send_invoice(uid, "اشتراك برو (شهري)", "تفعيل 4 بوتات لمدة 30 يوم تلقائياً.", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
+        bot.answer_callback_query(call.id)
+
+    elif call.data == "buy_stars_90":
+        bot.send_invoice(uid, "اشتراك برو (ربع سنوي)", "تفعيل 4 بوتات لمدة 90 يوم تلقائياً.", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
+        bot.answer_callback_query(call.id)
+
+    elif call.data == "buy_stars_365":
+        bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
+        bot.answer_callback_query(call.id)
+        
+    # متجر الدفع اليدوي
     elif call.data == "manual_menu_jaib":
-        bot.edit_message_text("📱 **محفظة جيب:**", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
+        bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب:**\nاختر الباقة المراد الاشتراك بها لمعاينة السعر بالدولار وما يعادله باليمني:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
+        bot.answer_callback_query(call.id)
+        
     elif call.data == "manual_menu_bank":
-        bot.edit_message_text("💸 **حوالة بنكية:**", uid, mid, reply_markup=manual_packages_keyboard("bank"))
+        bot.edit_message_text("💸 **دفع يدوي عبر حوالة (الامتياز / الكريمي):**\nاختر الباقة المراد الاشتراك بها لمعاينة السعر وبيانات المستلم:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
+        bot.answer_callback_query(call.id)
+
     elif call.data == "back_to_shop":
-        bot.edit_message_text("⚙️ **اختر وسيلة الدفع:**", uid, mid, reply_markup=price_plans_keyboard())
+        bot.edit_message_text("⚙️ **يرجى اختيار وسيلة الدفع والشحن المناسبة لك:**", uid, mid, reply_markup=price_plans_keyboard())
+        bot.answer_callback_query(call.id)
 
     elif call.data.startswith("ask_send_"):
         parts = call.data.split("_")
         method, days, price = parts[2], int(parts[3]), parts[4]
-        text = (
-            f"📱 محفظة جيب: `{MY_JAIB_ACCOUNT}`\nالاسم: **{OWNER_FULL_NAME}**\n📦 الباقة: {days} يوم\n💰 القيمة: **{price}**\n👇 أرسل صورة السند الآن:"
-            if method == "jaib" else
-            f"💸 حوالة: الاسم: `{OWNER_FULL_NAME}`\n📦 الباقة: {days} يوم\n💰 القيمة: **{price}**\n👇 أرسل صورة السند أو كود الحوالة:"
-        )
-        msg = bot.send_message(uid, text, parse_mode="Markdown")
-        bot.register_next_step_handler(msg, receive_manual_invoice, days, price)
-
-    # ---------- صلاحيات المطور ----------
-    elif call.data.startswith("admin_accept_"):
-        parts = call.data.split("_")
-        days, target = int(parts[2]), int(parts[3])
-        set_subscription(target, days=days)
-        bot.edit_message_caption(f"✅ تم تفعيل {days} يوم للمستخدم.", uid, mid)
-        bot.send_message(target, f"🎉 تم تفعيل اشتراكك {days} يوم!")
-    elif call.data.startswith("admin_reject_"):
-        target = int(call.data.split("_")[2])
-        bot.edit_message_caption("❌ تم رفض الطلب.", uid, mid)
-        bot.send_message(target, "❌ للأسف، طلبك مرفوض.")
-
-    # ---------- التحقق من الاشتراك لباقي الأوامر ----------
-    if call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data in ["upload_website", "web_link", "protect", "status"]:
-        if not is_sub_active(uid):
-            bot.answer_callback_query(call.id, "⚠️ اشتراكك منتهي! قم بالشحن أولاً.", show_alert=True)
-            return
-
-    # ---------- أوامر السيرفرات والرفع ----------
-    if call.data == "choose_run":
-        bot.edit_message_text("🚀 اختر رقم السيرفر لتشغيله:", uid, mid, reply_markup=bot_selector_menu("run"))
-    elif call.data == "choose_stop":
-        bot.edit_message_text("🛑 اختر رقم السيرفر لإيقافه:", uid, mid, reply_markup=bot_selector_menu("stop"))
-    elif call.data == "choose_upload":
-        bot.edit_message_text("📤 اختر رقم السيرفر لرفع أي ملف إليه:", uid, mid, reply_markup=bot_selector_menu("upload"))
-    elif call.data == "choose_files":
-        bot.edit_message_text("📁 اختر رقم السيرفر لعرض ملفاته:", uid, mid, reply_markup=bot_selector_menu("files"))
-
-    # ---------- رفع موقع ويب ----------
-    elif call.data == "upload_website":
-        msg = bot.send_message(uid, "🌐 أرسل ملفات الموقع (مضغوطة .zip أو أي ملفات HTML/CSS/JS). لا توجد قيود.")
-        bot.register_next_step_handler(msg, receive_website_files)
-
-    elif call.data == "web_link":
-        web_dir = os.path.join(BASE_DIR, str(uid), "website")
-        if os.path.isdir(web_dir) and os.listdir(web_dir):
-            render_url = os.environ.get("RENDER_EXTERNAL_URL", "http://your-url.onrender.com")
-            bot.send_message(uid, f"🌐 رابط موقعك: {render_url}/site/{uid}/")
+        
+        if method == "jaib":
+            msg_text = f"📱 **بوابة محفظة جيب اليدوية:**\n━━━━━━━━━━━━━━━━━━━━\nرقم المحفظة: `{MY_JAIB_ACCOUNT}`\nالاسم المعتمد: **{OWNER_FULL_NAME}**\n📦 الباقة المختارة: `{days} يوم`\n💰 القيمة المطلوبة: **{price}** (أو ما يعادلها بالريال اليمني حسب الصرف)\n\n👇 **قم بالتحويل الآن ثم أرسل صورة السند هنا مباشرة لمراجعة الدفع:**"
         else:
-            bot.send_message(uid, "📭 لم ترفع موقعًا بعد.")
+            msg_text = f"💸 **بوابة الحوالات اليدوية (الامتياز / الكريمي):**\n━━━━━━━━━━━━━━━━━━━━\nالاسم الكامل للمستلم: `{OWNER_FULL_NAME}`\n📦 الباقة المختارة: `{days} يوم`\n💰 القيمة المطلوبة: **{price}**\n\n👇 **بعد إرسال الحوالة، أرسل صورة السند أو كود الحوالة هنا ليتم تفعيل حسابك:**"
+            
+        msg = bot.send_message(uid, msg_text, parse_mode="Markdown")
+        bot.register_next_step_handler(msg, receive_manual_invoice, days, price)
         bot.answer_callback_query(call.id)
 
-    # ---------- تشغيل / إيقاف ----------
+    # لوحة تحكم المطور حافظ (قبول / رفض)
+    elif call.data.startswith("admin_accept_"):
+        parts = call.data.split("_")
+        days, target_user = int(parts[2]), int(parts[3])
+        set_subscription(target_user, days=days)
+        bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
+        bot.send_message(target_user, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
+        
+    elif call.data.startswith("admin_reject_"):
+        target_user = int(call.data.split("_")[2])
+        bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
+        bot.send_message(target_user, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
+
+    # حماية السيرفرات والأوامر السحابية
+    elif call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data == "protect":
+        if not is_sub_active(uid):
+            bot.answer_callback_query(call.id, "⚠️ عذراً عزيزي، اشتراكك منتهي أو غير مفعّل! اشحن عبر النجوم أو أرسل سند التحويل اليدوي.", show_alert=True)
+            return
+
+    if call.data == "choose_run":
+        bot.edit_message_text("🚀 **اختر رقم السيرفر السحابي المراد تشغيله:**", uid, mid, reply_markup=bot_selector_menu("run"))
+    elif call.data == "choose_stop":
+        bot.edit_message_text("🛑 **اختر رقم السيرفر السحابي المراد إيقافه:**", uid, mid, reply_markup=bot_selector_menu("stop"))
+    elif call.data == "choose_upload":
+        bot.edit_message_text("📤 **اختر السيرفر السحابي المراد رفع كودك إليه:**", uid, mid, reply_markup=bot_selector_menu("upload"))
+    elif call.data == "choose_files":
+        bot.edit_message_text("📁 **اختر السيرفر لمعاينة وحجم الملف المرفوع به:**", uid, mid, reply_markup=bot_selector_menu("files"))
+
     elif call.data.startswith("run_"):
         bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
         path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
+        
         if not os.path.exists(path):
-            bot.answer_callback_query(call.id, f"❌ لا يوجد bot.py في السيرفر {bot_num}!", show_alert=True)
+            bot.answer_callback_query(call.id, f"❌ لم تقم برفع ملف الكود للسيرفر رقم {bot_num}!", show_alert=True)
             return
         if process_key in active_processes and active_processes[process_key].poll() is None:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر يعمل بالفعل!", show_alert=True)
+            bot.answer_callback_query(call.id, f"⚠️ السيرفر {bot_num} يعمل بالفعل!", show_alert=True)
             return
+
+        # ---- 1️⃣ فحص أخطاء الكود (Syntactic errors) ----
         try:
             py_compile.compile(path, doraise=True)
-        except py_compile.PyCompileError as e:
-            bot.send_message(uid, f"❌ خطأ برمجي:\n```{str(e)[:500]}```", parse_mode="Markdown")
+        except py_compile.PyCompileError as syntax_err:
+            # عرض الخطأ بشكل أوضح للمستخدم
+            error_lines = str(syntax_err).split('\n')
+            clean_error = ""
+            for line in error_lines:
+                if 'SyntaxError' in line or 'unterminated' in line or 'EOL' in line:
+                    clean_error = line.strip()
+                    break
+            if not clean_error:
+                clean_error = str(syntax_err)[:500]
+            bot.send_message(uid, f"❌ **فشل تشغيل الملف! تم اكتشاف خطأ برمجي في كودك:**\n\n```\n{clean_error}\n```\n📍 تأكد من إغلاق جميع علامات التنصيص `\"` أو `'` بشكل صحيح.", parse_mode="Markdown")
+            bot.answer_callback_query(call.id)
             return
+
+        if len(active_processes) >= 15:
+            oldest_key = next(iter(active_processes))
+            active_processes[oldest_key].terminate()
+            del active_processes[oldest_key]
+
         try:
-            env = os.environ.copy()
-            env["PYTHONUNBUFFERED"] = "1"
-            proc = subprocess.Popen([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+            optimized_env = os.environ.copy()
+            optimized_env["PYTHONUNBUFFERED"] = "1"
+            optimized_env["PYTHONDONTWRITEBYTECODE"] = "1"
+            
+            proc = subprocess.Popen(
+                [sys.executable, path], 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                env=optimized_env,
+                text=True
+            )
+            
             time.sleep(2)
+            
             if proc.poll() is not None:
-                _, stderr = proc.communicate()
-                bot.send_message(uid, f"❌ فشل التشغيل:\n```{stderr[:2000]}```", parse_mode="Markdown")
+                stdout, stderr = proc.communicate()
+                bot.send_message(uid, f"❌ **انتهى البوت فور تشغيله بسبب خطأ داخلي:**\n\n```\n{stderr[:3000]}\n```", parse_mode="Markdown")
+                bot.answer_callback_query(call.id)
                 return
-            active_processes[process_key] = proc
-            bot.edit_message_text(f"🟢 تم تشغيل السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
+
+            active_processes[process_key] = proc  
+            bot.edit_message_text(f"🟢 **تم تشغيل السيرفر الفرعي رقم ({bot_num}) بنجاح!**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         except Exception as e:
-            bot.send_message(uid, f"❌ خطأ: {str(e)}")
+            bot.answer_callback_query(call.id, f"❌ فشل تشغيل البوت: {str(e)}", show_alert=True)
 
     elif call.data.startswith("stop_"):
         bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
         if process_key in active_processes and active_processes[process_key].poll() is None:
-            active_processes[process_key].terminate()
+            active_processes[process_key].terminate()  
             del active_processes[process_key]
-            bot.edit_message_text(f"🛑 تم إيقاف السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
+            bot.edit_message_text(f"🛑 **تم إيقاف السيرفر رقم ({bot_num}) بنجاح.**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
         else:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر متوقف بالفعل.", show_alert=True)
+            bot.answer_callback_query(call.id, f"⚠️ السيرفر رقم {bot_num} متوقف حالياً!", show_alert=True)
 
-    # ---------- رفع أي ملف للسيرفر (مع تصحيح اسم البوت التلقائي) ----------
     elif call.data.startswith("upload_"):
         bot_num = call.data.split("_")[1]
-        msg = bot.send_message(uid, f"📤 أرسل أي ملف لرفعه للسيرفر {bot_num}. إذا كان ملف بايثون (.py) سيتم تحويله تلقائياً إلى bot.py.")
-        bot.register_next_step_handler(msg, save_any_file, bot_num)
+        msg = bot.send_message(uid, f"📤 **أرسل الآن ملفك البرمجي الموجه للسيرفر رقم ({bot_num}).**")
+        bot.register_next_step_handler(msg, save_bot_file, bot_num)
 
-    # ---------- عرض الملفات ----------
     elif call.data.startswith("files_"):
         bot_num = call.data.split("_")[1]
-        folder = f"{BASE_DIR}/{uid}/bot{bot_num}"
-        if os.path.exists(folder):
-            files = os.listdir(folder)
-            if files:
-                text = "\n".join([f"📄 {f} ({os.path.getsize(os.path.join(folder,f))/1024:.2f} KB)" for f in files])
-                bot.send_message(uid, f"📁 ملفات السيرفر {bot_num}:\n{text}")
-            else:
-                bot.send_message(uid, "📭 المجلد فارغ.")
+        path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
+        if os.path.exists(path):
+            size = os.path.getsize(path) / 1024
+            bot.send_message(uid, f"📁 **ملفاتك على سيرفر ({bot_num}):**\n📄 الاسم: `bot.py`\n⚖️ الحجم: `{size:.2f} KB`", parse_mode="Markdown")
         else:
-            bot.send_message(uid, "📭 لا يوجد مجلد بعد.")
+            bot.send_message(uid, f"📁 المجلد السحابي للسيرفر رقم ({bot_num}) فارغ.", parse_mode="Markdown")
 
     elif call.data == "back":
-        bot.edit_message_text("🏠 القائمة الرئيسية:", uid, mid, reply_markup=main_menu(uid))
+        bot.edit_message_text("🏠 **العودة إلى لوحة التحكم الرئيسية:**", uid, mid, reply_markup=main_menu(uid), parse_mode="Markdown")
 
-    bot.answer_callback_query(call.id)
-
-# ================= استقبال الملفات مع التصحيح التلقائي لملفات البوت =================
-def save_any_file(message, bot_num):
-    uid = message.chat.id
-    if not message.document:
-        bot.send_message(uid, "❌ أرسل ملفًا كمستند.")
-        return
-    try:
-        folder = os.path.join(BASE_DIR, str(uid), f"bot{bot_num}")
-        os.makedirs(folder, exist_ok=True)
-        file_info = bot.get_file(message.document.file_id)
-        content = bot.download_file(file_info.file_path)
-        original_name = message.document.file_name or "uploaded_file"
-        ext = os.path.splitext(original_name)[1].lower()
-
-        # إذا كان الملف بايثون، نعيد تسميته إلى bot.py
-        if ext == ".py":
-            final_name = "bot.py"
-            bot.send_message(uid, f"🔁 تم تحويل `{original_name}` تلقائياً إلى `{final_name}` ليصبح جاهزاً للتشغيل.")
-        else:
-            final_name = original_name
-
-        with open(os.path.join(folder, final_name), "wb") as f:
-            f.write(content)
-        bot.send_message(uid, f"✅ تم رفع الملف بنجاح إلى السيرفر {bot_num}.")
-
-    except Exception as e:
-        bot.send_message(uid, f"❌ فشل: {str(e)}")
-
-# ================= استقبال ملفات الموقع (بدون قيود) =================
-def receive_website_files(message):
-    uid = message.chat.id
-    if not message.document:
-        bot.send_message(uid, "❌ أرسل ملفات الموقع كمستند.")
-        return
-    try:
-        web_dir = os.path.join(BASE_DIR, str(uid), "website")
-        os.makedirs(web_dir, exist_ok=True)
-        file_info = bot.get_file(message.document.file_id)
-        content = bot.download_file(file_info.file_path)
-        name = message.document.file_name.lower()
-        if name.endswith('.zip'):
-            zip_path = os.path.join(web_dir, "temp.zip")
-            with open(zip_path, "wb") as f:
-                f.write(content)
-            with zipfile.ZipFile(zip_path, 'r') as zf:
-                zf.extractall(web_dir)  # بدون فحص
-            os.remove(zip_path)
-            bot.send_message(uid, "✅ تم استخراج الموقع. الرابط: /site/{}/".format(uid))
-        else:
-            with open(os.path.join(web_dir, message.document.file_name), "wb") as f:
-                f.write(content)
-            bot.send_message(uid, f"✅ تم رفع `{message.document.file_name}`. ارفع index.html إن لم يكن موجودًا.")
-    except Exception as e:
-        bot.send_message(uid, f"❌ فشل رفع الموقع: {str(e)}")
-
-# ================= الدفع اليدوي =================
-def receive_manual_invoice(message, days, price):
-    uid = message.chat.id
-    markup = admin_approval_keyboard(uid, days, price)
-    if message.photo:
-        bot.send_message(uid, "⏳ جاري إرسال السند للمطور...")
-        bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
-                       caption=f"💰 طلب شحن:\n👤 {message.from_user.first_name}\n🆔 `{uid}`\n📦 {days} يوم\n💵 {price}",
-                       reply_markup=markup)
-    elif message.text:
-        bot.send_message(uid, "⏳ جاري إرسال البيانات للمطور...")
-        bot.send_message(ADMIN_ID,
-                         f"💰 طلب شحن:\n📄 {message.text}\n👤 {message.from_user.first_name}\n🆔 `{uid}`\n📦 {days} يوم\n💵 {price}",
-                         reply_markup=markup)
-    else:
-        bot.send_message(uid, "❌ أرسل صورة أو نصًا من فضلك.")
-
-# ================= نظام النجوم =================
+# ================= TELEGRAM STARS AUTO-ACTIVATION SYSTEM =================
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
@@ -467,45 +438,80 @@ def checkout(pre_checkout_query):
 def got_payment(message):
     uid = message.chat.id
     payload = message.successful_payment.invoice_payload
+    
     if payload == "stars_30":
         set_subscription(uid, days=30)
-        bot.send_message(uid, "🎉 تم تفعيل الباقة الشهرية.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 100 نجمة وتفعيل الباقة الشهرية (30 يوم) بنجاح!**", parse_mode="Markdown")
     elif payload == "stars_90":
         set_subscription(uid, days=90)
-        bot.send_message(uid, "🎉 تم تفعيل باقة ربع السنة.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 300 نجمة وتفعيل الباقة الربع سنوية (90 يوم) بنجاح!**", parse_mode="Markdown")
     elif payload == "stars_365":
         set_subscription(uid, days=365)
-        bot.send_message(uid, "🎉 تم تفعيل الباقة السنوية.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 650 نجمة وتفعيل الباقة السنوية (365 يوم) بنجاح!**", parse_mode="Markdown")
 
-# ================= خدمة عرض الموقع =================
-@app.route('/site/<int:user_id>/')
-@app.route('/site/<int:user_id>/<path:filename>')
-def serve_website(user_id, filename='index.html'):
-    web_dir = os.path.join(BASE_DIR, str(user_id), "website")
-    if not os.path.isdir(web_dir):
-        abort(404)
-    return send_from_directory(web_dir, filename)
+# ================= HANDLERS FOR MANUAL INVOICES (ADMIN CAPTION) =================
+def receive_manual_invoice(message, package_days, price):
+    uid = message.chat.id
+    markup = admin_approval_keyboard(uid, package_days, price)
+    
+    if message.photo:
+        bot.send_message(uid, "⏳ **تم استلام صورة السند بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
+        bot.send_photo(
+            chat_id=ADMIN_ID, 
+            photo=message.photo[-1].file_id, 
+            caption=f"💰 **طلب شحن يدوي جديد:**\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n📦 الباقة المطلوبة: `{package_days} يوم`\n💵 القيمة المراد استلامها: **{price}**", 
+            reply_markup=markup
+        )
+    elif message.text:
+        bot.send_message(uid, "⏳ **تم استلام بيانات التحويل بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
+        bot.send_message(
+            chat_id=ADMIN_ID, 
+            text=f"💰 **طلب شحن يدوي (بيانات نصية):**\n📄 النص المرفق: {message.text}\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n📦 الباقة المطلوبة: `{package_days} يوم`\n💵 القيمة المراد استلامها: **{price}**", 
+            reply_markup=markup
+        )
+    else:
+        bot.send_message(uid, "❌ خطأ: لم تقم بإرسال صورة سند أو نص واضح، يرجى إعادة المحاولة من قائمة التفعيل.")
 
-# ================= إعداد الويب هوك =================
+def save_bot_file(message, bot_num):
+    uid = message.chat.id
+    if not message.document:
+        bot.send_message(uid, "❌ خطأ: يرجى إرسال ملف بصيغة مستند (Document).")
+        return
+    try:
+        user_bot_path = f"{BASE_DIR}/{uid}/bot{bot_num}"
+        os.makedirs(user_bot_path, exist_ok=True)
+        finfo = bot.get_file(message.document.file_id)
+        downloaded = bot.download_file(finfo.file_path) 
+        with open(f"{user_bot_path}/bot.py", "wb") as f:
+            f.write(downloaded)
+        bot.send_message(uid, f"✅ **تم حفظ وتثبيت كودك بنجاح في السيرفر {bot_num} باسم `bot.py`!**", parse_mode="Markdown")
+    except Exception as e:
+        bot.send_message(uid, f"❌ حدث خطأ أثناء حفظ الملف: {str(e)}")
+
 @app.route("/set_webhook", methods=["GET", "POST"])
 def setup_webhook_route():
     bot.remove_webhook()
-    render_url = os.environ.get("RENDER_EXTERNAL_URL")
-    if not render_url:
-        return "⚠️ عيّن RENDER_EXTERNAL_URL", 400
-    if bot.set_webhook(url=f"{render_url}/{TOKEN}"):
-        return f"✅ تم ربط Webhook على {render_url}", 200
-    return "❌ فشل", 500
+    render_external_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if not render_external_url:
+        return "⚠️ خطأ: تأكد من تشغيل المشروع كـ Web Service في Render لتفعيل الرابط التلقائي.", 400
+    success = bot.set_webhook(url=f"{render_external_url}/{TOKEN}")
+    if success:
+        return f"🟢 تم ربط البوت بالسيرفر بنجاح عبر الـ Webhook الخارجي!<br>الرابط: {render_external_url}", 200
+    else:
+        return "❌ فشل ربط البوت، تأكد من الـ Token الخاص بك.", 500
 
-# ================= نقطة البداية =================
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 10000))
+    
+    # تعيين webhook تلقائياً عند بدء التشغيل (بدون الحاجة لزيارة /set_webhook)
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     if render_url:
+        webhook_url = f"{render_url}/{TOKEN}"
         bot.remove_webhook()
-        bot.set_webhook(url=f"{render_url}/{TOKEN}")
-        logger.info(f"Webhook set to {render_url}")
+        bot.set_webhook(url=webhook_url)
+        print(f"✅ Webhook set to {webhook_url}")
     else:
-        logger.warning("RENDER_EXTERNAL_URL not set. Webhook not configured.")
-    print(f"📡 المنصة تعمل على المنفذ {port}")
+        print("⚠️ RENDER_EXTERNAL_URL not found. Webhook not set automatically. Visit /set_webhook manually.")
+    
+    print(f"📡 جاري تشغيل المنصة عبر Waitress على المنفذ: {port}")
     serve(app, host='0.0.0.0', port=port)
