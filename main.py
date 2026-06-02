@@ -155,11 +155,14 @@ def bot_selector_menu(action):
     m.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="back"))
     return m
 
-def price_plans_keyboard():
+def payment_methods_keyboard():
     m = types.InlineKeyboardMarkup(row_width=1)
-    m.add(types.InlineKeyboardButton("⭐ شحن تلقائي فوراً عبر نجوم تلجرام", callback_data="stars_shop_menu"))
-    m.add(types.InlineKeyboardButton("📱 دفع يدوي (محفظة جيب باليمني)", callback_data="manual_menu_jaib"))
-    m.add(types.InlineKeyboardButton("💸 حوالة يدوية (الامتياز / الكريمي)", callback_data="manual_menu_bank"))
+    m.add(
+        types.InlineKeyboardButton("⭐ شحن تلقائي فوراً عبر نجوم تلجرام", callback_data="stars_shop_menu"),
+        types.InlineKeyboardButton("📱 دفع يدوي - محفظة جيب (JAIB)", callback_data="manual_menu_jaib"),
+        types.InlineKeyboardButton("🏦 دفع يدوي - بنك الكريمي الإسلامي", callback_data="manual_menu_bank"),
+        types.InlineKeyboardButton("💱 دفع يدوي - شبكة الامتياز للصرافة", callback_data="manual_menu_emtiaz")
+    )
     return m
 
 def stars_packages_keyboard():
@@ -169,7 +172,7 @@ def stars_packages_keyboard():
         types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 300 نجمة", callback_data="buy_stars_90"),
         types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 650 نجمة", callback_data="buy_stars_365")
     )
-    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_shop"))
+    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_payment"))
     return m
 
 def manual_packages_keyboard(method):
@@ -180,10 +183,10 @@ def manual_packages_keyboard(method):
         types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 6$", callback_data=f"ask_send_{method}_90_6$"),
         types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 10$", callback_data=f"ask_send_{method}_365_10$")
     )
-    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_shop"))
+    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_payment"))
     return m
 
-def admin_approval_keyboard(target_id, package_days, price):
+def admin_approval_keyboard(target_id, package_days, price, method_name):
     m = types.InlineKeyboardMarkup(row_width=2)
     m.add(
         types.InlineKeyboardButton("✅ قبول وتفعيل الاشتراك", callback_data=f"admin_accept_{package_days}_{target_id}"),
@@ -197,27 +200,48 @@ def start(message):
     uid = message.chat.id
     create_user_and_check_free(uid)
     is_active = is_sub_active(uid)
+    status_icon = "🟢 مفعّل بنجاح" if is_active else "🔴 غير مفعل / منتهي"
     time_rem = get_remaining_time(uid)
+    
     welcome = f"""
 ✨ **مرحباً بك في مجمع استضافات VIRTUAL SERVER PRO** ✨
 ━━━━━━━━━━━━━━━━━━━━
-⚙️ **تشغيل بوتات + استضافة مواقع ويب + رفع أي ملفات بدون قيود.**
+⚙️ **أقوى منصة سحابية لتشغيل حتى 4 بوتات تلجرام معاً 24 ساعة دون انقطاع.**
 
-👤 {message.from_user.first_name}
-🆔 `{uid}`
-🛡️ {'🟢 مفعّل' if is_active else '🔴 غير مفعل'}
-⏳ {time_rem}
+👤 **العضو:** {message.from_user.first_name}
+🆔 **المعرف الخاص بك:** `{uid}`
+🛡️ **حالة السيرفر:** {status_icon}
+⏳ **فترة الصلاحية:** `{time_rem}`
 ━━━━━━━━━━━━━━━━━━━━
+👇 **اختر من الأزرار بالأسفل لبدء إدارة وتفعيل خدماتك السحابية:**
 """
     bot.send_message(uid, welcome, parse_mode="Markdown", reply_markup=start_keyboard())
 
 @bot.message_handler(func=lambda msg: msg.text == "🎛️ فتح لوحة التحكم السحابية")
 def open_panel(message):
-    bot.send_message(message.chat.id, "💎 **لوحة التحكم الاحترافية:**", reply_markup=main_menu(message.chat.id))
+    bot.send_message(message.chat.id, "💎 **لوحة التحكم بالخدمات السحابية المتعددة (الحد الأقصى: 4 بوتات + مواقع ويب):**", reply_markup=main_menu(message.chat.id), parse_mode="Markdown")
 
 @bot.message_handler(func=lambda msg: msg.text == "💳 تفعيل حسابي وشحن الرصيد")
 def open_shop(message):
-    bot.send_message(message.chat.id, "⚙️ **اختر وسيلة الدفع:**", reply_markup=price_plans_keyboard())
+    shop_text = """💳 **بوابة شحن وتفعيل الاشتراك السحابي المتعدد:**
+━━━━━━━━━━━━━━━━━━━━
+💵 **الدفع اليدوي (بالريال اليمني أو بالدولار):**
+
+💻 **طرق الدفع المحلية المتاحة:**
+1️⃣ محفظة جيب (JAIB)
+2️⃣ بنك الكريمي الإسلامي
+3️⃣ شبكة الامتياز للصرافة 🌟
+
+👤 **اسم المستلم المعتمد:** حافظ عبده احمد عبدالرحمن احمد
+📱 **رقم الهاتف / الحساب:** 👈 784714890 👉
+
+(قم بالتحويل حسب عملتك المحلية باليمني أو بالدولار عبر أي من الطرق أعلاه، ثم اختر الباقة المناسبة من الأسفل وأرسل صورة إشعار أو سند التحويل لتفعيل حسابك آلياً)
+
+🌟 **الدفع التلقائي بالنجوم:**
+تفعيل فوري آلي دون الحاجة لانتظار موافقة الإدارة!
+
+👇 **اختر الخطة المناسبة لك من الأسفل:**"""
+    bot.send_message(message.chat.id, shop_text, reply_markup=payment_methods_keyboard())
 
 @bot.message_handler(func=lambda msg: msg.text == "🎁 تفعيل الخدمة المجانية اليومية")
 def active_free_day(message):
@@ -240,9 +264,9 @@ def active_free_day(message):
         set_subscription(uid, hours=1)
         cursor.execute("UPDATE users SET last_free_time=? WHERE user_id=?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), uid))
         conn.commit()
-        bot.send_message(uid, "🎁 **تم تفعيل ساعة مجانية!**")
+        bot.send_message(uid, "🎁 **تهانينا! تم تفعيل فترة مجانية صالحة لمدة ساعة واحدة بنجاح لتجربة السيرفرات.**", parse_mode="Markdown")
     else:
-        bot.send_message(uid, "⚠️ استهلكت المجانية اليوم. عد بعد 24 ساعة.")
+        bot.send_message(uid, "⚠️ **عذراً، لقد استهلكت مكافأتك المجانية اليوم! يمكنك المحاولة مجدداً بعد مرور 24 ساعة.**")
     conn.close()
 
 # ================= معالجة الأزرار =================
@@ -253,44 +277,70 @@ def handle_call(call):
 
     # ---------- الدفع بالنجوم ----------
     if call.data == "stars_shop_menu":
-        bot.edit_message_text("⭐ **متجر النجوم:**", uid, mid, reply_markup=stars_packages_keyboard())
+        bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
     elif call.data == "buy_stars_30":
-        bot.send_invoice(uid, "اشتراك شهري", "30 يوم", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
+        bot.send_invoice(uid, "اشتراك برو (شهري)", "تفعيل 4 بوتات لمدة 30 يوم تلقائياً.", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
     elif call.data == "buy_stars_90":
-        bot.send_invoice(uid, "اشتراك ربع سنوي", "90 يوم", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
+        bot.send_invoice(uid, "اشتراك برو (ربع سنوي)", "تفعيل 4 بوتات لمدة 90 يوم تلقائياً.", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
     elif call.data == "buy_stars_365":
-        bot.send_invoice(uid, "اشتراك سنوي", "365 يوم", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
+        bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
 
     # ---------- الدفع اليدوي ----------
     elif call.data == "manual_menu_jaib":
-        bot.edit_message_text("📱 **محفظة جيب:**", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
+        bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب (JAIB):**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
     elif call.data == "manual_menu_bank":
-        bot.edit_message_text("💸 **حوالة بنكية:**", uid, mid, reply_markup=manual_packages_keyboard("bank"))
-    elif call.data == "back_to_shop":
-        bot.edit_message_text("⚙️ **اختر وسيلة الدفع:**", uid, mid, reply_markup=price_plans_keyboard())
+        bot.edit_message_text("🏦 **دفع يدوي عبر بنك الكريمي الإسلامي:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
+    elif call.data == "manual_menu_emtiaz":
+        bot.edit_message_text("💱 **دفع يدوي عبر شبكة الامتياز للصرافة:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("emtiaz"))
+    elif call.data == "back_to_payment":
+        shop_text = """💳 **بوابة شحن وتفعيل الاشتراك السحابي المتعدد:**
+━━━━━━━━━━━━━━━━━━━━
+💵 **الدفع اليدوي (بالريال اليمني أو بالدولار):**
+
+💻 **طرق الدفع المحلية المتاحة:**
+1️⃣ محفظة جيب (JAIB)
+2️⃣ بنك الكريمي الإسلامي
+3️⃣ شبكة الامتياز للصرافة 🌟
+
+👤 **اسم المستلم المعتمد:** حافظ عبده احمد عبدالرحمن احمد
+📱 **رقم الهاتف / الحساب:** 👈 784714890 👉
+
+🌟 **الدفع التلقائي بالنجوم:**
+تفعيل فوري آلي دون الحاجة لانتظار موافقة الإدارة!
+
+👇 **اختر الخطة المناسبة لك من الأسفل:**"""
+        bot.edit_message_text(shop_text, uid, mid, reply_markup=payment_methods_keyboard())
 
     elif call.data.startswith("ask_send_"):
         parts = call.data.split("_")
         method, days, price = parts[2], int(parts[3]), parts[4]
-        text = (
-            f"📱 محفظة جيب: `{MY_JAIB_ACCOUNT}`\nالاسم: **{OWNER_FULL_NAME}**\n📦 الباقة: {days} يوم\n💰 القيمة: **{price}**\n👇 أرسل صورة السند الآن:"
-            if method == "jaib" else
-            f"💸 حوالة: الاسم: `{OWNER_FULL_NAME}`\n📦 الباقة: {days} يوم\n💰 القيمة: **{price}**\n👇 أرسل صورة السند أو كود الحوالة:"
-        )
+        
+        method_names = {"jaib": "محفظة جيب (JAIB)", "bank": "بنك الكريمي الإسلامي", "emtiaz": "شبكة الامتياز للصرافة"}
+        method_name = method_names.get(method, method)
+        
+        text = f"""📱 **بوابة الدفع اليدوي - {method_name}:**
+━━━━━━━━━━━━━━━━━━━━
+👤 **اسم المستلم:** {OWNER_FULL_NAME}
+📱 **رقم الحساب:** `{MY_JAIB_ACCOUNT}`
+📦 **الباقة المختارة:** `{days} يوم`
+💰 **القيمة المطلوبة:** **{price}** (أو ما يعادلها بالريال اليمني)
+
+👇 **قم بالتحويل الآن ثم أرسل صورة السند أو كود الحوالة هنا مباشرة لمراجعة الدفع:**"""
+        
         msg = bot.send_message(uid, text, parse_mode="Markdown")
-        bot.register_next_step_handler(msg, receive_manual_invoice, days, price)
+        bot.register_next_step_handler(msg, receive_manual_invoice, days, price, method_name)
 
     # ---------- صلاحيات المطور ----------
     elif call.data.startswith("admin_accept_"):
         parts = call.data.split("_")
         days, target = int(parts[2]), int(parts[3])
         set_subscription(target, days=days)
-        bot.edit_message_caption(f"✅ تم تفعيل {days} يوم للمستخدم.", uid, mid)
-        bot.send_message(target, f"🎉 تم تفعيل اشتراكك {days} يوم!")
+        bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
+        bot.send_message(target, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
     elif call.data.startswith("admin_reject_"):
         target = int(call.data.split("_")[2])
-        bot.edit_message_caption("❌ تم رفض الطلب.", uid, mid)
-        bot.send_message(target, "❌ للأسف، طلبك مرفوض.")
+        bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
+        bot.send_message(target, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
 
     # ---------- التحقق من الاشتراك لباقي الأوامر ----------
     if call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data in ["upload_website", "web_link", "protect", "status"]:
@@ -438,21 +488,21 @@ def receive_website_files(message):
         bot.send_message(uid, f"❌ فشل رفع الموقع: {str(e)}")
 
 # ================= الدفع اليدوي =================
-def receive_manual_invoice(message, days, price):
+def receive_manual_invoice(message, days, price, method_name):
     uid = message.chat.id
-    markup = admin_approval_keyboard(uid, days, price)
+    markup = admin_approval_keyboard(uid, days, price, method_name)
     if message.photo:
-        bot.send_message(uid, "⏳ جاري إرسال السند للمطور...")
+        bot.send_message(uid, "⏳ **تم استلام صورة السند بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
         bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
-                       caption=f"💰 طلب شحن:\n👤 {message.from_user.first_name}\n🆔 `{uid}`\n📦 {days} يوم\n💵 {price}",
+                       caption=f"💰 **طلب شحن يدوي جديد:**\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n🏦 طريقة الدفع: {method_name}\n📦 الباقة المطلوبة: `{days} يوم`\n💵 القيمة: **{price}**",
                        reply_markup=markup)
     elif message.text:
-        bot.send_message(uid, "⏳ جاري إرسال البيانات للمطور...")
+        bot.send_message(uid, "⏳ **تم استلام بيانات التحويل بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
         bot.send_message(ADMIN_ID,
-                         f"💰 طلب شحن:\n📄 {message.text}\n👤 {message.from_user.first_name}\n🆔 `{uid}`\n📦 {days} يوم\n💵 {price}",
+                         f"💰 **طلب شحن يدوي (بيانات نصية):**\n📄 النص: {message.text}\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n🏦 طريقة الدفع: {method_name}\n📦 الباقة: `{days} يوم`\n💵 القيمة: **{price}**",
                          reply_markup=markup)
     else:
-        bot.send_message(uid, "❌ أرسل صورة أو نصًا من فضلك.")
+        bot.send_message(uid, "❌ خطأ: لم تقم بإرسال صورة سند أو نص واضح، يرجى إعادة المحاولة من قائمة التفعيل.")
 
 # ================= نظام النجوم =================
 @bot.pre_checkout_query_handler(func=lambda query: True)
@@ -465,13 +515,13 @@ def got_payment(message):
     payload = message.successful_payment.invoice_payload
     if payload == "stars_30":
         set_subscription(uid, days=30)
-        bot.send_message(uid, "🎉 تم تفعيل الباقة الشهرية.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 100 نجمة وتفعيل الباقة الشهرية (30 يوم) بنجاح!**")
     elif payload == "stars_90":
         set_subscription(uid, days=90)
-        bot.send_message(uid, "🎉 تم تفعيل باقة ربع السنة.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 300 نجمة وتفعيل الباقة الربع سنوية (90 يوم) بنجاح!**")
     elif payload == "stars_365":
         set_subscription(uid, days=365)
-        bot.send_message(uid, "🎉 تم تفعيل الباقة السنوية.")
+        bot.send_message(uid, "🎉 **تم شحن حسابك تلقائياً بـ 650 نجمة وتفعيل الباقة السنوية (365 يوم) بنجاح!**")
 
 # ================= خدمة عرض الموقع =================
 @app.route('/site/<int:user_id>/')
@@ -505,6 +555,10 @@ def telegram_webhook():
         bot.process_new_updates([update])
         return "OK", 200
     return "Invalid Request", 403
+
+@app.route("/")
+def home():
+    return "🟢 Virtual Server Pro Is Running Successfully 24/7!"
 
 # ================= نقطة البداية =================
 if __name__ == "__main__":
