@@ -15,7 +15,7 @@ from waitress import serve
 # ================= إعدادات التسجيل =================
 logging.basicConfig(
     level=logging.INFO,
-    format= %(asctime)s - %(name)s - %(levelname)s - %(message)s ,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("VirtualServerPro")
@@ -204,7 +204,7 @@ def start(message):
 
 👤 {message.from_user.first_name}
 🆔 `{uid}`
-🛡️ { 🟢 مفعّل  if is_active else  🔴 غير مفعل }
+🛡️ {'🟢 مفعّل' if is_active else '🔴 غير مفعل'}
 ⏳ {time_rem}
 ━━━━━━━━━━━━━━━━━━━━
 """
@@ -426,11 +426,11 @@ def receive_website_files(message):
         file_info = bot.get_file(message.document.file_id)
         content = bot.download_file(file_info.file_path)
         name = message.document.file_name.lower()
-        if name.endswith( .zip ):
+        if name.endswith('.zip'):
             zip_path = os.path.join(web_dir, "temp.zip")
             with open(zip_path, "wb") as f:
                 f.write(content)
-            with zipfile.ZipFile(zip_path,  r ) as zf:
+            with zipfile.ZipFile(zip_path, 'r') as zf:
                 zf.extractall(web_dir)  # بدون فحص
             os.remove(zip_path)
             bot.send_message(uid, "✅ تم استخراج الموقع. الرابط: /site/{}/".format(uid))
@@ -463,7 +463,7 @@ def receive_manual_invoice(message, days, price):
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
-@bot.message_handler(content_types=[ successful_payment ])
+@bot.message_handler(content_types=['successful_payment'])
 def got_payment(message):
     uid = message.chat.id
     payload = message.successful_payment.invoice_payload
@@ -478,9 +478,9 @@ def got_payment(message):
         bot.send_message(uid, "🎉 تم تفعيل الباقة السنوية.")
 
 # ================= خدمة عرض الموقع =================
-@app.route( /site/<int:user_id>/ )
-@app.route( /site/<int:user_id>/<path:filename> )
-def serve_website(user_id, filename= index.html ):
+@app.route('/site/<int:user_id>/')
+@app.route('/site/<int:user_id>/<path:filename>')
+def serve_website(user_id, filename='index.html'):
     web_dir = os.path.join(BASE_DIR, str(user_id), "website")
     if not os.path.isdir(web_dir):
         abort(404)
@@ -499,7 +499,7 @@ def setup_webhook_route():
 
 # ================= نقطة البداية =================
 if __name__ == "__main__":
-    port = int(os.environ.get( PORT , 10000))
+    port = int(os.environ.get('PORT', 10000))
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     if render_url:
         bot.remove_webhook()
@@ -508,4 +508,4 @@ if __name__ == "__main__":
     else:
         logger.warning("RENDER_EXTERNAL_URL not set. Webhook not configured.")
     print(f"📡 المنصة تعمل على المنفذ {port}")
-    serve(app, host= 0.0.0.0 , port=port)
+    serve(app, host='0.0.0.0', port=port)
