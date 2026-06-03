@@ -178,10 +178,10 @@ def stars_packages_keyboard():
 def manual_packages_keyboard(method):
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
-        types.InlineKeyboardButton("🗓️ باقة أسبوع (7 أيام) ➔ 2$", callback_data=f"ask_send_{method}_7_2$"),
-        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) ➔ 4$", callback_data=f"ask_send_{method}_30_4$"),
-        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 6$", callback_data=f"ask_send_{method}_90_6$"),
-        types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 10$", callback_data=f"ask_send_{method}_365_10$")
+        types.InlineKeyboardButton("🗓️ باقة أسبوع (7 أيام) ➔ 2$", callback_data=f"ask_send_{method}_7_2USD"),
+        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) ➔ 4$", callback_data=f"ask_send_{method}_30_4USD"),
+        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 6$", callback_data=f"ask_send_{method}_90_6USD"),
+        types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 10$", callback_data=f"ask_send_{method}_365_10USD")
     )
     m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_payment"))
     return m
@@ -272,28 +272,35 @@ def active_free_day(message):
 # ================= معالجة الأزرار =================
 @bot.callback_query_handler(func=lambda call: True)
 def handle_call(call):
-    uid = call.message.chat.id
-    mid = call.message.message_id
+    try:
+        uid = call.message.chat.id
+        mid = call.message.message_id
 
-    # ---------- الدفع بالنجوم ----------
-    if call.data == "stars_shop_menu":
-        bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
-    elif call.data == "buy_stars_30":
-        bot.send_invoice(uid, "اشتراك برو (شهري)", "تفعيل 4 بوتات لمدة 30 يوم تلقائياً.", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
-    elif call.data == "buy_stars_90":
-        bot.send_invoice(uid, "اشتراك برو (ربع سنوي)", "تفعيل 4 بوتات لمدة 90 يوم تلقائياً.", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
-    elif call.data == "buy_stars_365":
-        bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
+        # ---------- الدفع بالنجوم ----------
+        if call.data == "stars_shop_menu":
+            bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
 
-    # ---------- الدفع اليدوي ----------
-    elif call.data == "manual_menu_jaib":
-        bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب (JAIB):**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
-    elif call.data == "manual_menu_bank":
-        bot.edit_message_text("🏦 **دفع يدوي عبر بنك الكريمي الإسلامي:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
-    elif call.data == "manual_menu_emtiaz":
-        bot.edit_message_text("💱 **دفع يدوي عبر شبكة الامتياز للصرافة:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("emtiaz"))
-    elif call.data == "back_to_payment":
-        shop_text = """💳 **بوابة شحن وتفعيل الاشتراك السحابي المتعدد:**
+        elif call.data == "buy_stars_30":
+            bot.send_invoice(uid, "اشتراك برو (شهري)", "تفعيل 4 بوتات لمدة 30 يوم تلقائياً.", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
+
+        elif call.data == "buy_stars_90":
+            bot.send_invoice(uid, "اشتراك برو (ربع سنوي)", "تفعيل 4 بوتات لمدة 90 يوم تلقائياً.", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
+
+        elif call.data == "buy_stars_365":
+            bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
+
+        # ---------- الدفع اليدوي ----------
+        elif call.data == "manual_menu_jaib":
+            bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب (JAIB):**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
+
+        elif call.data == "manual_menu_bank":
+            bot.edit_message_text("🏦 **دفع يدوي عبر بنك الكريمي الإسلامي:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
+
+        elif call.data == "manual_menu_emtiaz":
+            bot.edit_message_text("💱 **دفع يدوي عبر شبكة الامتياز للصرافة:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("emtiaz"))
+
+        elif call.data == "back_to_payment":
+            shop_text = """💳 **بوابة شحن وتفعيل الاشتراك السحابي المتعدد:**
 ━━━━━━━━━━━━━━━━━━━━
 💵 **الدفع اليدوي (بالريال اليمني أو بالدولار):**
 
@@ -309,16 +316,18 @@ def handle_call(call):
 تفعيل فوري آلي دون الحاجة لانتظار موافقة الإدارة!
 
 👇 **اختر الخطة المناسبة لك من الأسفل:**"""
-        bot.edit_message_text(shop_text, uid, mid, reply_markup=payment_methods_keyboard())
+            bot.edit_message_text(shop_text, uid, mid, reply_markup=payment_methods_keyboard())
 
-    elif call.data.startswith("ask_send_"):
-        parts = call.data.split("_")
-        method, days, price = parts[2], int(parts[3]), parts[4]
-        
-        method_names = {"jaib": "محفظة جيب (JAIB)", "bank": "بنك الكريمي الإسلامي", "emtiaz": "شبكة الامتياز للصرافة"}
-        method_name = method_names.get(method, method)
-        
-        text = f"""📱 **بوابة الدفع اليدوي - {method_name}:**
+        elif call.data.startswith("ask_send_"):
+            parts = call.data.split("_")
+            method = parts[2]
+            days = int(parts[3])
+            price = parts[4].replace("USD", "$")
+            
+            method_names = {"jaib": "محفظة جيب (JAIB)", "bank": "بنك الكريمي الإسلامي", "emtiaz": "شبكة الامتياز للصرافة"}
+            method_name = method_names.get(method, method)
+            
+            text = f"""📱 **بوابة الدفع اليدوي - {method_name}:**
 ━━━━━━━━━━━━━━━━━━━━
 👤 **اسم المستلم:** {OWNER_FULL_NAME}
 📱 **رقم الحساب:** `{MY_JAIB_ACCOUNT}`
@@ -326,116 +335,119 @@ def handle_call(call):
 💰 **القيمة المطلوبة:** **{price}** (أو ما يعادلها بالريال اليمني)
 
 👇 **قم بالتحويل الآن ثم أرسل صورة السند أو كود الحوالة هنا مباشرة لمراجعة الدفع:**"""
-        
-        msg = bot.send_message(uid, text, parse_mode="Markdown")
-        bot.register_next_step_handler(msg, receive_manual_invoice, days, price, method_name)
+            
+            msg = bot.send_message(uid, text, parse_mode="Markdown")
+            bot.register_next_step_handler(msg, receive_manual_invoice, days, price, method_name)
 
-    # ---------- صلاحيات المطور ----------
-    elif call.data.startswith("admin_accept_"):
-        parts = call.data.split("_")
-        days, target = int(parts[2]), int(parts[3])
-        set_subscription(target, days=days)
-        bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
-        bot.send_message(target, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
-    elif call.data.startswith("admin_reject_"):
-        target = int(call.data.split("_")[2])
-        bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
-        bot.send_message(target, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
+        # ---------- صلاحيات المطور ----------
+        elif call.data.startswith("admin_accept_"):
+            parts = call.data.split("_")
+            days = int(parts[2])
+            target = int(parts[3])
+            set_subscription(target, days=days)
+            bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
+            bot.send_message(target, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
 
-    # ---------- التحقق من الاشتراك لباقي الأوامر ----------
-    if call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data in ["upload_website", "web_link", "protect", "status"]:
-        if not is_sub_active(uid):
-            bot.answer_callback_query(call.id, "⚠️ اشتراكك منتهي! قم بالشحن أولاً.", show_alert=True)
-            return
+        elif call.data.startswith("admin_reject_"):
+            target = int(call.data.split("_")[2])
+            bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
+            bot.send_message(target, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
 
-    # ---------- أوامر السيرفرات والرفع ----------
-    if call.data == "choose_run":
-        bot.edit_message_text("🚀 اختر رقم السيرفر لتشغيله:", uid, mid, reply_markup=bot_selector_menu("run"))
-    elif call.data == "choose_stop":
-        bot.edit_message_text("🛑 اختر رقم السيرفر لإيقافه:", uid, mid, reply_markup=bot_selector_menu("stop"))
-    elif call.data == "choose_upload":
-        bot.edit_message_text("📤 اختر رقم السيرفر لرفع أي ملف إليه:", uid, mid, reply_markup=bot_selector_menu("upload"))
-    elif call.data == "choose_files":
-        bot.edit_message_text("📁 اختر رقم السيرفر لعرض ملفاته:", uid, mid, reply_markup=bot_selector_menu("files"))
-
-    # ---------- رفع موقع ويب ----------
-    elif call.data == "upload_website":
-        msg = bot.send_message(uid, "🌐 أرسل ملفات الموقع (مضغوطة .zip أو أي ملفات HTML/CSS/JS). لا توجد قيود.")
-        bot.register_next_step_handler(msg, receive_website_files)
-
-    elif call.data == "web_link":
-        web_dir = os.path.join(BASE_DIR, str(uid), "website")
-        if os.path.isdir(web_dir) and os.listdir(web_dir):
-            render_url = os.environ.get("RENDER_EXTERNAL_URL", "http://your-url.onrender.com")
-            bot.send_message(uid, f"🌐 رابط موقعك: {render_url}/site/{uid}/")
-        else:
-            bot.send_message(uid, "📭 لم ترفع موقعًا بعد.")
-        bot.answer_callback_query(call.id)
-
-    # ---------- تشغيل / إيقاف ----------
-    elif call.data.startswith("run_"):
-        bot_num = call.data.split("_")[1]
-        process_key = f"{uid}_{bot_num}"
-        path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
-        if not os.path.exists(path):
-            bot.answer_callback_query(call.id, f"❌ لا يوجد bot.py في السيرفر {bot_num}!", show_alert=True)
-            return
-        if process_key in active_processes and active_processes[process_key].poll() is None:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر يعمل بالفعل!", show_alert=True)
-            return
-        try:
-            py_compile.compile(path, doraise=True)
-        except py_compile.PyCompileError as e:
-            bot.send_message(uid, f"❌ خطأ برمجي:\n```{str(e)[:500]}```", parse_mode="Markdown")
-            return
-        try:
-            env = os.environ.copy()
-            env["PYTHONUNBUFFERED"] = "1"
-            proc = subprocess.Popen([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
-            time.sleep(2)
-            if proc.poll() is not None:
-                _, stderr = proc.communicate()
-                bot.send_message(uid, f"❌ فشل التشغيل:\n```{stderr[:2000]}```", parse_mode="Markdown")
+        # ---------- التحقق من الاشتراك ----------
+        elif call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data in ["upload_website", "web_link", "protect", "status"]:
+            if not is_sub_active(uid):
+                bot.answer_callback_query(call.id, "⚠️ اشتراكك منتهي! قم بالشحن أولاً.", show_alert=True)
                 return
-            active_processes[process_key] = proc
-            bot.edit_message_text(f"🟢 تم تشغيل السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
-        except Exception as e:
-            bot.send_message(uid, f"❌ خطأ: {str(e)}")
 
-    elif call.data.startswith("stop_"):
-        bot_num = call.data.split("_")[1]
-        process_key = f"{uid}_{bot_num}"
-        if process_key in active_processes and active_processes[process_key].poll() is None:
-            active_processes[process_key].terminate()
-            del active_processes[process_key]
-            bot.edit_message_text(f"🛑 تم إيقاف السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
-        else:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر متوقف بالفعل.", show_alert=True)
+            # ---------- أوامر السيرفرات والرفع ----------
+            if call.data == "choose_run":
+                bot.edit_message_text("🚀 اختر رقم السيرفر لتشغيله:", uid, mid, reply_markup=bot_selector_menu("run"))
+            elif call.data == "choose_stop":
+                bot.edit_message_text("🛑 اختر رقم السيرفر لإيقافه:", uid, mid, reply_markup=bot_selector_menu("stop"))
+            elif call.data == "choose_upload":
+                bot.edit_message_text("📤 اختر رقم السيرفر لرفع أي ملف إليه:", uid, mid, reply_markup=bot_selector_menu("upload"))
+            elif call.data == "choose_files":
+                bot.edit_message_text("📁 اختر رقم السيرفر لعرض ملفاته:", uid, mid, reply_markup=bot_selector_menu("files"))
+            elif call.data == "upload_website":
+                msg = bot.send_message(uid, "🌐 أرسل ملفات الموقع (مضغوطة .zip أو أي ملفات HTML/CSS/JS). لا توجد قيود.")
+                bot.register_next_step_handler(msg, receive_website_files)
+            elif call.data == "web_link":
+                web_dir = os.path.join(BASE_DIR, str(uid), "website")
+                if os.path.isdir(web_dir) and os.listdir(web_dir):
+                    render_url = os.environ.get("RENDER_EXTERNAL_URL", "http://your-url.onrender.com")
+                    bot.send_message(uid, f"🌐 رابط موقعك: {render_url}/site/{uid}/")
+                else:
+                    bot.send_message(uid, "📭 لم ترفع موقعًا بعد.")
 
-    # ---------- رفع أي ملف للسيرفر ----------
-    elif call.data.startswith("upload_"):
-        bot_num = call.data.split("_")[1]
-        msg = bot.send_message(uid, f"📤 أرسل أي ملف لرفعه للسيرفر {bot_num}. إذا كان ملف بايثون (.py) سيتم تحويله تلقائياً إلى bot.py.")
-        bot.register_next_step_handler(msg, save_any_file, bot_num)
+        # ---------- تشغيل سيرفر ----------
+        elif call.data.startswith("run_"):
+            bot_num = call.data.split("_")[1]
+            process_key = f"{uid}_{bot_num}"
+            path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
+            if not os.path.exists(path):
+                bot.answer_callback_query(call.id, f"❌ لا يوجد bot.py في السيرفر {bot_num}!", show_alert=True)
+                return
+            if process_key in active_processes and active_processes[process_key].poll() is None:
+                bot.answer_callback_query(call.id, "⚠️ السيرفر يعمل بالفعل!", show_alert=True)
+                return
+            try:
+                py_compile.compile(path, doraise=True)
+            except py_compile.PyCompileError as e:
+                bot.send_message(uid, f"❌ خطأ برمجي:\n```{str(e)[:500]}```", parse_mode="Markdown")
+                return
+            try:
+                env = os.environ.copy()
+                env["PYTHONUNBUFFERED"] = "1"
+                proc = subprocess.Popen([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+                time.sleep(2)
+                if proc.poll() is not None:
+                    _, stderr = proc.communicate()
+                    bot.send_message(uid, f"❌ فشل التشغيل:\n```{stderr[:2000]}```", parse_mode="Markdown")
+                    return
+                active_processes[process_key] = proc
+                bot.edit_message_text(f"🟢 تم تشغيل السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
+            except Exception as e:
+                bot.send_message(uid, f"❌ خطأ: {str(e)}")
 
-    # ---------- عرض الملفات ----------
-    elif call.data.startswith("files_"):
-        bot_num = call.data.split("_")[1]
-        folder = f"{BASE_DIR}/{uid}/bot{bot_num}"
-        if os.path.exists(folder):
-            files = os.listdir(folder)
-            if files:
-                text = "\n".join([f"📄 {f} ({os.path.getsize(os.path.join(folder,f))/1024:.2f} KB)" for f in files])
-                bot.send_message(uid, f"📁 ملفات السيرفر {bot_num}:\n{text}")
+        # ---------- إيقاف سيرفر ----------
+        elif call.data.startswith("stop_"):
+            bot_num = call.data.split("_")[1]
+            process_key = f"{uid}_{bot_num}"
+            if process_key in active_processes and active_processes[process_key].poll() is None:
+                active_processes[process_key].terminate()
+                del active_processes[process_key]
+                bot.edit_message_text(f"🛑 تم إيقاف السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
             else:
-                bot.send_message(uid, "📭 المجلد فارغ.")
-        else:
-            bot.send_message(uid, "📭 لا يوجد مجلد بعد.")
+                bot.answer_callback_query(call.id, "⚠️ السيرفر متوقف بالفعل.", show_alert=True)
 
-    elif call.data == "back":
-        bot.edit_message_text("🏠 القائمة الرئيسية:", uid, mid, reply_markup=main_menu(uid))
+        # ---------- رفع ملف للسيرفر ----------
+        elif call.data.startswith("upload_"):
+            bot_num = call.data.split("_")[1]
+            msg = bot.send_message(uid, f"📤 أرسل أي ملف لرفعه للسيرفر {bot_num}. إذا كان ملف بايثون (.py) سيتم تحويله تلقائياً إلى bot.py.")
+            bot.register_next_step_handler(msg, save_any_file, bot_num)
 
-    bot.answer_callback_query(call.id)
+        # ---------- عرض الملفات ----------
+        elif call.data.startswith("files_"):
+            bot_num = call.data.split("_")[1]
+            folder = f"{BASE_DIR}/{uid}/bot{bot_num}"
+            if os.path.exists(folder):
+                files = os.listdir(folder)
+                if files:
+                    text = "\n".join([f"📄 {f} ({os.path.getsize(os.path.join(folder,f))/1024:.2f} KB)" for f in files])
+                    bot.send_message(uid, f"📁 ملفات السيرفر {bot_num}:\n{text}")
+                else:
+                    bot.send_message(uid, "📭 المجلد فارغ.")
+            else:
+                bot.send_message(uid, "📭 لا يوجد مجلد بعد.")
+
+        elif call.data == "back":
+            bot.edit_message_text("🏠 القائمة الرئيسية:", uid, mid, reply_markup=main_menu(uid))
+
+        bot.answer_callback_query(call.id)
+    
+    except Exception as e:
+        logger.error(f"خطأ في معالجة الزر: {e}")
+        bot.answer_callback_query(call.id, "❌ حدث خطأ، حاول مرة أخرى.", show_alert=True)
 
 # ================= استقبال الملفات =================
 def save_any_file(message, bot_num):
@@ -530,7 +542,10 @@ def serve_website(user_id, filename='index.html'):
     web_dir = os.path.join(BASE_DIR, str(user_id), "website")
     if not os.path.isdir(web_dir):
         abort(404)
-    return send_from_directory(web_dir, filename)
+    try:
+        return send_from_directory(web_dir, filename)
+    except:
+        abort(404)
 
 # ================= Webhook (تلقائي) =================
 @app.route("/set_webhook")
