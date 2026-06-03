@@ -24,7 +24,7 @@ logger = logging.getLogger("VirtualServerPro")
 # ================= FLASK SERVER =================
 app = Flask(__name__)
 
-TOKEN = os.environ.get("BOT_TOKEN", "8790387996:AAFB6u4jHWrtsGPnECIxLWxiyJm8rgrV5Vs")
+TOKEN = os.environ.get("BOT_TOKEN", "8613457292:AAHY9U2D3kqOsSoSrub_7SAFI87BoQIUjiw")
 ADMIN_ID = 7484089854
 OWNER_USER = "@HAFZAbdh"
 OWNER_FULL_NAME = "حافظ عبده احمد عبدالرحمن احمد"
