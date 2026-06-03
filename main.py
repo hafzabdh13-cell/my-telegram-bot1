@@ -136,61 +136,61 @@ def start_keyboard():
 def main_menu(user_id):
     m = types.InlineKeyboardMarkup(row_width=2)
     m.add(
-        types.InlineKeyboardButton("📁 إدارة الملفات", callback_data="files"),
-        types.InlineKeyboardButton("📤 رفع ملف لسيرفر", callback_data="upload"),
-        types.InlineKeyboardButton("🌐 رفع موقع ويب", callback_data="webup"),
-        types.InlineKeyboardButton("🚀 تشغيل سيرفر", callback_data="run"),
-        types.InlineKeyboardButton("🛑 إيقاف سيرفر", callback_data="stop"),
-        types.InlineKeyboardButton("🌐 رابط الموقع", callback_data="link"),
-        types.InlineKeyboardButton("🔄 تحديث", callback_data="refresh")
+        types.InlineKeyboardButton("📁 إدارة الملفات", callback_data="choose_files"),
+        types.InlineKeyboardButton("📤 رفع ملف لأي سيرفر", callback_data="choose_upload"),
+        types.InlineKeyboardButton("🌐 رفع موقع ويب", callback_data="upload_website"),
+        types.InlineKeyboardButton("🚀 تشغيل سيرفر", callback_data="choose_run"),
+        types.InlineKeyboardButton("🛑 إيقاف سيرفر", callback_data="choose_stop"),
+        types.InlineKeyboardButton("🌐 رابط الموقع", callback_data="web_link"),
+        types.InlineKeyboardButton("📊 حالة الخادم العام", callback_data="status")
     )
     owner_link = OWNER_USER.replace("@", "")
-    m.add(types.InlineKeyboardButton("👑 الدعم الفني", url=f"https://t.me/{owner_link}"))
+    m.add(types.InlineKeyboardButton("👑 الدعم الفني للمالك", url=f"https://t.me/{owner_link}"))
     return m
 
 def bot_selector_menu(action):
     m = types.InlineKeyboardMarkup(row_width=2)
     for i in range(1, 5):
         m.add(types.InlineKeyboardButton(f"🤖 سيرفر {i}", callback_data=f"{action}_{i}"))
-    m.add(types.InlineKeyboardButton("🔙 العودة", callback_data="back"))
+    m.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="back"))
     return m
 
 def payment_methods_keyboard():
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
-        types.InlineKeyboardButton("⭐ شحن تلقائي عبر نجوم تلجرام", callback_data="stars_shop"),
-        types.InlineKeyboardButton("📱 محفظة جيب (JAIB)", callback_data="pay_jaib"),
-        types.InlineKeyboardButton("🏦 بنك الكريمي الإسلامي", callback_data="pay_bank"),
-        types.InlineKeyboardButton("💱 شبكة الامتياز للصرافة", callback_data="pay_emtiaz")
+        types.InlineKeyboardButton("⭐ شحن تلقائي فوراً عبر نجوم تلجرام", callback_data="stars_shop_menu"),
+        types.InlineKeyboardButton("📱 دفع يدوي - محفظة جيب (JAIB)", callback_data="manual_menu_jaib"),
+        types.InlineKeyboardButton("🏦 دفع يدوي - بنك الكريمي الإسلامي", callback_data="manual_menu_bank"),
+        types.InlineKeyboardButton("💱 دفع يدوي - شبكة الامتياز للصرافة", callback_data="manual_menu_emtiaz")
     )
     return m
 
 def stars_packages_keyboard():
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
-        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) - 100 نجمة", callback_data="buy_stars_30"),
-        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) - 300 نجمة", callback_data="buy_stars_90"),
-        types.InlineKeyboardButton("👑 باقة سنة (365 يوم) - 650 نجمة", callback_data="buy_stars_365")
+        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) ➔ 100 نجمة", callback_data="buy_stars_30"),
+        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 300 نجمة", callback_data="buy_stars_90"),
+        types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 650 نجمة", callback_data="buy_stars_365")
     )
-    m.add(types.InlineKeyboardButton("🔙 العودة", callback_data="back_to_shop"))
+    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_payment"))
     return m
 
 def manual_packages_keyboard(method):
     m = types.InlineKeyboardMarkup(row_width=1)
     m.add(
-        types.InlineKeyboardButton("🗓️ باقة أسبوع (7 أيام) - 2$", callback_data=f"order_{method}_7"),
-        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) - 4$", callback_data=f"order_{method}_30"),
-        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) - 6$", callback_data=f"order_{method}_90"),
-        types.InlineKeyboardButton("👑 باقة سنة (365 يوم) - 10$", callback_data=f"order_{method}_365")
+        types.InlineKeyboardButton("🗓️ باقة أسبوع (7 أيام) ➔ 2$", callback_data=f"ask_send_{method}_7_2$"),
+        types.InlineKeyboardButton("✨ باقة شهر (30 يوم) ➔ 4$", callback_data=f"ask_send_{method}_30_4$"),
+        types.InlineKeyboardButton("🔥 باقة ربع سنة (90 يوم) ➔ 6$", callback_data=f"ask_send_{method}_90_6$"),
+        types.InlineKeyboardButton("👑 باقة سنة كاملة (365 يوم) ➔ 10$", callback_data=f"ask_send_{method}_365_10$")
     )
-    m.add(types.InlineKeyboardButton("🔙 العودة", callback_data="back_to_shop"))
+    m.add(types.InlineKeyboardButton("🔙 العودة لوسائل الدفع", callback_data="back_to_payment"))
     return m
 
-def admin_approval_keyboard(target_id, package_days, price):
+def admin_approval_keyboard(target_id, package_days, price, method_name):
     m = types.InlineKeyboardMarkup(row_width=2)
     m.add(
-        types.InlineKeyboardButton("✅ قبول وتفعيل", callback_data=f"accept_{package_days}_{target_id}"),
-        types.InlineKeyboardButton("❌ رفض الطلب", callback_data=f"reject_{target_id}")
+        types.InlineKeyboardButton("✅ قبول وتفعيل الاشتراك", callback_data=f"admin_accept_{package_days}_{target_id}"),
+        types.InlineKeyboardButton("❌ رفض الطلب وإلغاء", callback_data=f"admin_reject_{target_id}")
     )
     return m
 
@@ -206,6 +206,7 @@ def start(message):
     welcome = f"""
 ✨ **مرحباً بك في مجمع استضافات VIRTUAL SERVER PRO** ✨
 ━━━━━━━━━━━━━━━━━━━━
+⚙️ **أقوى منصة سحابية لتشغيل حتى 4 بوتات تلجرام معاً 24 ساعة دون انقطاع.**
 ⚙️ **تشغيل بوتات + استضافة مواقع ويب + رفع أي ملفات بدون قيود.**
 
 👤 **العضو:** {message.from_user.first_name}
@@ -219,7 +220,7 @@ def start(message):
 
 @bot.message_handler(func=lambda msg: msg.text == "🎛️ فتح لوحة التحكم السحابية")
 def open_panel(message):
-    bot.send_message(message.chat.id, "💎 **لوحة التحكم بالخدمات السحابية:**", reply_markup=main_menu(message.chat.id))
+    bot.send_message(message.chat.id, "💎 **لوحة التحكم بالخدمات السحابية المتعددة (الحد الأقصى: 4 بوتات + مواقع ويب):**", reply_markup=main_menu(message.chat.id), parse_mode="Markdown")
 
 @bot.message_handler(func=lambda msg: msg.text == "💳 تفعيل حسابي وشحن الرصيد")
 def open_shop(message):
@@ -234,6 +235,8 @@ def open_shop(message):
 
 👤 **اسم المستلم المعتمد:** حافظ عبده احمد عبدالرحمن احمد
 📱 **رقم الهاتف / الحساب:** 👈 784714890 👉
+
+(قم بالتحويل حسب عملتك المحلية باليمني أو بالدولار عبر أي من الطرق أعلاه، ثم اختر الباقة المناسبة من الأسفل وأرسل صورة إشعار أو سند التحويل لتفعيل حسابك آلياً)
 
 🌟 **الدفع التلقائي بالنجوم:**
 تفعيل فوري آلي دون الحاجة لانتظار موافقة الإدارة!
@@ -272,34 +275,25 @@ def active_free_day(message):
 def handle_call(call):
     uid = call.message.chat.id
     mid = call.message.message_id
-    data = call.data
-    
-    logger.info(f"Callback: {data} from user {uid}")
 
     # ---------- الدفع بالنجوم ----------
-    if data == "stars_shop":
+    if call.data == "stars_shop_menu":
         bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
-    
-    elif data == "buy_stars_30":
+    elif call.data == "buy_stars_30":
         bot.send_invoice(uid, "اشتراك برو (شهري)", "تفعيل 4 بوتات لمدة 30 يوم تلقائياً.", "stars_30", "", "XTR", [types.LabeledPrice("باقة شهر", 100)])
-    
-    elif data == "buy_stars_90":
+    elif call.data == "buy_stars_90":
         bot.send_invoice(uid, "اشتراك برو (ربع سنوي)", "تفعيل 4 بوتات لمدة 90 يوم تلقائياً.", "stars_90", "", "XTR", [types.LabeledPrice("باقة ربع سنة", 300)])
-    
-    elif data == "buy_stars_365":
+    elif call.data == "buy_stars_365":
         bot.send_invoice(uid, "اشتراك برو (سنوي)", "تفعيل 4 بوتات لمدة 365 يوم تلقائياً.", "stars_365", "", "XTR", [types.LabeledPrice("باقة سنة", 650)])
 
     # ---------- الدفع اليدوي ----------
-    elif data == "pay_jaib":
-        bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب (JAIB):**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
-    
-    elif data == "pay_bank":
-        bot.edit_message_text("🏦 **دفع يدوي عبر بنك الكريمي الإسلامي:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
-    
-    elif data == "pay_emtiaz":
-        bot.edit_message_text("💱 **دفع يدوي عبر شبكة الامتياز للصرافة:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة:", uid, mid, reply_markup=manual_packages_keyboard("emtiaz"))
-    
-    elif data == "back_to_shop":
+    elif call.data == "manual_menu_jaib":
+        bot.edit_message_text("📱 **دفع يدوي عبر محفظة جيب (JAIB):**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("jaib"))
+    elif call.data == "manual_menu_bank":
+        bot.edit_message_text("🏦 **دفع يدوي عبر بنك الكريمي الإسلامي:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("bank"))
+    elif call.data == "manual_menu_emtiaz":
+        bot.edit_message_text("💱 **دفع يدوي عبر شبكة الامتياز للصرافة:**\n━━━━━━━━━━━━━━━━━━━━\n👤 المستلم: **حافظ عبده احمد عبدالرحمن احمد**\n📱 رقم الحساب: `784714890`\n\nاختر الباقة المراد الاشتراك بها:", uid, mid, reply_markup=manual_packages_keyboard("emtiaz"))
+    elif call.data == "back_to_payment":
         shop_text = """💳 **بوابة شحن وتفعيل الاشتراك السحابي المتعدد:**
 ━━━━━━━━━━━━━━━━━━━━
 💵 **الدفع اليدوي (بالريال اليمني أو بالدولار):**
@@ -318,13 +312,9 @@ def handle_call(call):
 👇 **اختر الخطة المناسبة لك من الأسفل:**"""
         bot.edit_message_text(shop_text, uid, mid, reply_markup=payment_methods_keyboard())
 
-    # ---------- طلب شحن يدوي ----------
-    elif data.startswith("order_"):
-        parts = data.split("_")
-        method = parts[1]
-        days = int(parts[2])
-        prices = {7: "2$", 30: "4$", 90: "6$", 365: "10$"}
-        price = prices.get(days, "?")
+    elif call.data.startswith("ask_send_"):
+        parts = call.data.split("_")
+        method, days, price = parts[2], int(parts[3]), parts[4]
         
         method_names = {"jaib": "محفظة جيب (JAIB)", "bank": "بنك الكريمي الإسلامي", "emtiaz": "شبكة الامتياز للصرافة"}
         method_name = method_names.get(method, method)
@@ -342,71 +332,67 @@ def handle_call(call):
         bot.register_next_step_handler(msg, receive_manual_invoice, days, price, method_name)
 
     # ---------- صلاحيات المطور ----------
-    elif data.startswith("accept_"):
-        parts = data.split("_")
-        days = int(parts[1])
-        target = int(parts[2])
+    elif call.data.startswith("admin_accept_"):
+        parts = call.data.split("_")
+        days, target = int(parts[2]), int(parts[3])
         set_subscription(target, days=days)
         bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
         bot.send_message(target, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
-    
-    elif data.startswith("reject_"):
-        target = int(data.split("_")[1])
+    elif call.data.startswith("admin_reject_"):
+        target = int(call.data.split("_")[2])
         bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
         bot.send_message(target, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
 
-    # ---------- الأزرار الرئيسية ----------
-    elif data == "run":
+    # ---------- التحقق من الاشتراك لباقي الأوامر ----------
+    if call.data.startswith(("choose_", "run_", "stop_", "upload_", "files_")) or call.data in ["upload_website", "web_link", "protect", "status"]:
+        if not is_sub_active(uid):
+            bot.answer_callback_query(call.id, "⚠️ اشتراكك منتهي! قم بالشحن أولاً.", show_alert=True)
+            return
+
+    # ---------- أوامر السيرفرات والرفع ----------
+    if call.data == "choose_run":
         bot.edit_message_text("🚀 اختر رقم السيرفر لتشغيله:", uid, mid, reply_markup=bot_selector_menu("run"))
-    
-    elif data == "stop":
+    elif call.data == "choose_stop":
         bot.edit_message_text("🛑 اختر رقم السيرفر لإيقافه:", uid, mid, reply_markup=bot_selector_menu("stop"))
-    
-    elif data == "upload":
+    elif call.data == "choose_upload":
         bot.edit_message_text("📤 اختر رقم السيرفر لرفع أي ملف إليه:", uid, mid, reply_markup=bot_selector_menu("upload"))
-    
-    elif data == "files":
+    elif call.data == "choose_files":
         bot.edit_message_text("📁 اختر رقم السيرفر لعرض ملفاته:", uid, mid, reply_markup=bot_selector_menu("files"))
-    
-    elif data == "webup":
+
+    # ---------- رفع موقع ويب ----------
+    elif call.data == "upload_website":
         msg = bot.send_message(uid, "🌐 أرسل ملفات الموقع (مضغوطة .zip أو أي ملفات HTML/CSS/JS). لا توجد قيود.")
         bot.register_next_step_handler(msg, receive_website_files)
-    
-    elif data == "link":
+
+    elif call.data == "web_link":
         web_dir = os.path.join(BASE_DIR, str(uid), "website")
         if os.path.isdir(web_dir) and os.listdir(web_dir):
             render_url = os.environ.get("RENDER_EXTERNAL_URL", "http://your-url.onrender.com")
             bot.send_message(uid, f"🌐 رابط موقعك: {render_url}/site/{uid}/")
         else:
             bot.send_message(uid, "📭 لم ترفع موقعًا بعد.")
-    
-    elif data == "back":
-        bot.edit_message_text("🏠 القائمة الرئيسية:", uid, mid, reply_markup=main_menu(uid))
-    
-    elif data == "refresh":
-        bot.edit_message_text("💎 **لوحة التحكم بالخدمات السحابية:**", uid, mid, reply_markup=main_menu(uid))
+        bot.answer_callback_query(call.id)
 
-    # ---------- تشغيل سيرفر ----------
-    elif data.startswith("run_"):
-        bot_num = data.split("_")[1]
+    # ---------- تشغيل / إيقاف ----------
+    elif call.data.startswith("run_"):
+        bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
         path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
-        
         if not os.path.exists(path):
             bot.answer_callback_query(call.id, f"❌ لا يوجد bot.py في السيرفر {bot_num}!", show_alert=True)
             return
         if process_key in active_processes and active_processes[process_key].poll() is None:
             bot.answer_callback_query(call.id, "⚠️ السيرفر يعمل بالفعل!", show_alert=True)
             return
-        
         try:
             py_compile.compile(path, doraise=True)
         except py_compile.PyCompileError as e:
             bot.send_message(uid, f"❌ خطأ برمجي:\n```{str(e)[:500]}```", parse_mode="Markdown")
             return
-        
         try:
-            proc = subprocess.Popen([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
+            proc = subprocess.Popen([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
             time.sleep(2)
             if proc.poll() is not None:
                 _, stderr = proc.communicate()
@@ -417,9 +403,8 @@ def handle_call(call):
         except Exception as e:
             bot.send_message(uid, f"❌ خطأ: {str(e)}")
 
-    # ---------- إيقاف سيرفر ----------
-    elif data.startswith("stop_"):
-        bot_num = data.split("_")[1]
+    elif call.data.startswith("stop_"):
+        bot_num = call.data.split("_")[1]
         process_key = f"{uid}_{bot_num}"
         if process_key in active_processes and active_processes[process_key].poll() is None:
             active_processes[process_key].terminate()
@@ -428,15 +413,15 @@ def handle_call(call):
         else:
             bot.answer_callback_query(call.id, "⚠️ السيرفر متوقف بالفعل.", show_alert=True)
 
-    # ---------- رفع ملف للسيرفر ----------
-    elif data.startswith("upload_"):
-        bot_num = data.split("_")[1]
+    # ---------- رفع أي ملف للسيرفر ----------
+    elif call.data.startswith("upload_"):
+        bot_num = call.data.split("_")[1]
         msg = bot.send_message(uid, f"📤 أرسل أي ملف لرفعه للسيرفر {bot_num}. إذا كان ملف بايثون (.py) سيتم تحويله تلقائياً إلى bot.py.")
         bot.register_next_step_handler(msg, save_any_file, bot_num)
 
     # ---------- عرض الملفات ----------
-    elif data.startswith("files_"):
-        bot_num = data.split("_")[1]
+    elif call.data.startswith("files_"):
+        bot_num = call.data.split("_")[1]
         folder = f"{BASE_DIR}/{uid}/bot{bot_num}"
         if os.path.exists(folder):
             files = os.listdir(folder)
@@ -447,6 +432,9 @@ def handle_call(call):
                 bot.send_message(uid, "📭 المجلد فارغ.")
         else:
             bot.send_message(uid, "📭 لا يوجد مجلد بعد.")
+
+    elif call.data == "back":
+        bot.edit_message_text("🏠 القائمة الرئيسية:", uid, mid, reply_markup=main_menu(uid))
 
     bot.answer_callback_query(call.id)
 
@@ -492,7 +480,7 @@ def receive_website_files(message):
             with zipfile.ZipFile(zip_path, 'r') as zf:
                 zf.extractall(web_dir)
             os.remove(zip_path)
-            bot.send_message(uid, "✅ تم استخراج الموقع بنجاح.")
+            bot.send_message(uid, "✅ تم استخراج الموقع. الرابط: /site/{}/".format(uid))
         else:
             with open(os.path.join(web_dir, message.document.file_name), "wb") as f:
                 f.write(content)
@@ -503,7 +491,7 @@ def receive_website_files(message):
 # ================= الدفع اليدوي =================
 def receive_manual_invoice(message, days, price, method_name):
     uid = message.chat.id
-    markup = admin_approval_keyboard(uid, days, price)
+    markup = admin_approval_keyboard(uid, days, price, method_name)
     if message.photo:
         bot.send_message(uid, "⏳ **تم استلام صورة السند بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
         bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
@@ -543,12 +531,23 @@ def serve_website(user_id, filename='index.html'):
     web_dir = os.path.join(BASE_DIR, str(user_id), "website")
     if not os.path.isdir(web_dir):
         abort(404)
-    try:
-        return send_from_directory(web_dir, filename)
-    except:
-        abort(404)
+    return send_from_directory(web_dir, filename)
 
-# ================= Webhook =================
+# ================= Webhook (تلقائي) =================
+@app.route("/set_webhook")
+def setup_webhook():
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if not render_url:
+        return "❌ RENDER_EXTERNAL_URL غير موجود", 500
+    try:
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook")
+        resp = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={render_url}/{TOKEN}")
+        if resp.json().get("ok"):
+            return f"✅ Webhook set to {render_url}/{TOKEN}"
+        return f"❌ فشل: {resp.text}"
+    except Exception as e:
+        return f"❌ خطأ: {str(e)}"
+
 @app.route(f"/{TOKEN}", methods=["POST"])
 def telegram_webhook():
     if request.headers.get('content-type') == 'application/json':
@@ -568,10 +567,12 @@ if __name__ == "__main__":
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     if render_url:
         try:
-            bot.remove_webhook()
-            time.sleep(1)
-            bot.set_webhook(url=f"{render_url}/{TOKEN}")
-            logger.info(f"✅ Webhook set to {render_url}/{TOKEN}")
+            requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook")
+            resp = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={render_url}/{TOKEN}")
+            if resp.json().get("ok"):
+                logger.info(f"✅ Webhook set to {render_url}/{TOKEN}")
+            else:
+                logger.error(f"❌ Webhook failed: {resp.text}")
         except Exception as e:
             logger.error(f"❌ Webhook error: {e}")
     else:
