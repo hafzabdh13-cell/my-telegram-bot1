@@ -7,11 +7,11 @@ import sqlite3
 import subprocess
 import py_compile
 import zipfile
-import requests
 from datetime import datetime, timedelta
 from flask import Flask, request, send_from_directory, abort
 from telebot import types
 from waitress import serve
+from threading import Thread
 
 # ================= إعدادات التسجيل =================
 logging.basicConfig(
@@ -24,7 +24,7 @@ logger = logging.getLogger("VirtualServerPro")
 # ================= FLASK SERVER =================
 app = Flask(__name__)
 
-TOKEN = os.environ.get("BOT_TOKEN", "8613457292:AAHY9U2D3kqOsSoSrub_7SAFI87BoQIUjiw")
+TOKEN = os.environ.get("BOT_TOKEN", "8790387996:AAFB6u4jHWrtsGPnECIxLWxiyJm8rgrV5Vs")
 ADMIN_ID = 7484089854
 OWNER_USER = "@HAFZAbdh"
 OWNER_FULL_NAME = "حافظ عبده احمد عبدالرحمن احمد"
@@ -274,8 +274,11 @@ def handle_call(call):
     mid = call.message.message_id
     data = call.data
     
-    logger.info(f"Callback: {data} from user {uid}")
-
+    print(f"✅ Callback received: {data} from {uid}")  # للتأكد من وصول الضغطة
+    
+    # تأكيد استلام الضغطة فوراً
+    bot.answer_callback_query(call.id)
+    
     # ---------- الدفع بالنجوم ----------
     if data == "stars_shop":
         bot.edit_message_text("⭐ **متجر شحن نجوم تلجرام التلقائي الفوري:**\nاختر الباقة المراد الاشتراك بها وسيتم تفعيلك تلقائياً:", uid, mid, reply_markup=stars_packages_keyboard())
@@ -338,6 +341,7 @@ def handle_call(call):
 
 👇 **قم بالتحويل الآن ثم أرسل صورة السند أو كود الحوالة هنا مباشرة لمراجعة الدفع:**"""
         
+        bot.delete_message(uid, mid)
         msg = bot.send_message(uid, text, parse_mode="Markdown")
         bot.register_next_step_handler(msg, receive_manual_invoice, days, price, method_name)
 
@@ -347,15 +351,15 @@ def handle_call(call):
         days = int(parts[1])
         target = int(parts[2])
         set_subscription(target, days=days)
-        bot.edit_message_caption(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
+        bot.edit_message_text(f"✅ **تم تفعيل الاشتراك باقة ({days} يوم) للمستخدم بنجاح.**", uid, mid)
         bot.send_message(target, f"🎉 **أهلاً بك! تم مراجعة السند وقبوله من قِبل المطور حافظ، وتم تفعيل اشتراكك السحابي لمدة {days} يوماً بنجاح!**")
     
     elif data.startswith("reject_"):
         target = int(data.split("_")[1])
-        bot.edit_message_caption("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
+        bot.edit_message_text("❌ **تم رفض السند وإلغاء الطلب.**", uid, mid)
         bot.send_message(target, "❌ **عذراً، تم مراجعة السند المرسل من قبلك وتبين أنه غير صالح أو مرفوض من قبل الإدارة.**")
 
-    # ---------- الأزرار الرئيسية (بدون فحص اشتراك) ----------
+    # ---------- الأزرار الرئيسية ----------
     elif data == "run":
         bot.edit_message_text("🚀 اختر رقم السيرفر لتشغيله:", uid, mid, reply_markup=bot_selector_menu("run"))
     
@@ -369,6 +373,7 @@ def handle_call(call):
         bot.edit_message_text("📁 اختر رقم السيرفر لعرض ملفاته:", uid, mid, reply_markup=bot_selector_menu("files"))
     
     elif data == "webup":
+        bot.delete_message(uid, mid)
         msg = bot.send_message(uid, "🌐 أرسل ملفات الموقع (مضغوطة .zip أو أي ملفات HTML/CSS/JS). لا توجد قيود.")
         bot.register_next_step_handler(msg, receive_website_files)
     
@@ -393,10 +398,10 @@ def handle_call(call):
         path = f"{BASE_DIR}/{uid}/bot{bot_num}/bot.py"
         
         if not os.path.exists(path):
-            bot.answer_callback_query(call.id, f"❌ لا يوجد bot.py في السيرفر {bot_num}!", show_alert=True)
+            bot.send_message(uid, f"❌ لا يوجد bot.py في السيرفر {bot_num}!")
             return
         if process_key in active_processes and active_processes[process_key].poll() is None:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر يعمل بالفعل!", show_alert=True)
+            bot.send_message(uid, "⚠️ السيرفر يعمل بالفعل!")
             return
         
         try:
@@ -413,7 +418,7 @@ def handle_call(call):
                 bot.send_message(uid, f"❌ فشل التشغيل:\n```{stderr[:2000]}```", parse_mode="Markdown")
                 return
             active_processes[process_key] = proc
-            bot.edit_message_text(f"🟢 تم تشغيل السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
+            bot.send_message(uid, f"🟢 تم تشغيل السيرفر {bot_num}.")
         except Exception as e:
             bot.send_message(uid, f"❌ خطأ: {str(e)}")
 
@@ -424,13 +429,14 @@ def handle_call(call):
         if process_key in active_processes and active_processes[process_key].poll() is None:
             active_processes[process_key].terminate()
             del active_processes[process_key]
-            bot.edit_message_text(f"🛑 تم إيقاف السيرفر {bot_num}.", uid, mid, reply_markup=main_menu(uid))
+            bot.send_message(uid, f"🛑 تم إيقاف السيرفر {bot_num}.")
         else:
-            bot.answer_callback_query(call.id, "⚠️ السيرفر متوقف بالفعل.", show_alert=True)
+            bot.send_message(uid, "⚠️ السيرفر متوقف بالفعل.")
 
     # ---------- رفع ملف للسيرفر ----------
     elif data.startswith("upload_"):
         bot_num = data.split("_")[1]
+        bot.delete_message(uid, mid)
         msg = bot.send_message(uid, f"📤 أرسل أي ملف لرفعه للسيرفر {bot_num}. إذا كان ملف بايثون (.py) سيتم تحويله تلقائياً إلى bot.py.")
         bot.register_next_step_handler(msg, save_any_file, bot_num)
 
@@ -447,8 +453,9 @@ def handle_call(call):
                 bot.send_message(uid, "📭 المجلد فارغ.")
         else:
             bot.send_message(uid, "📭 لا يوجد مجلد بعد.")
-
-    bot.answer_callback_query(call.id)
+    
+    else:
+        bot.send_message(uid, f"⚠️ زر غير معروف: {data}")
 
 # ================= استقبال الملفات =================
 def save_any_file(message, bot_num):
@@ -465,7 +472,7 @@ def save_any_file(message, bot_num):
         ext = os.path.splitext(original_name)[1].lower()
         if ext == ".py":
             final_name = "bot.py"
-            bot.send_message(uid, f"🔁 تم تحويل `{original_name}` تلقائياً إلى `{final_name}` ليصبح جاهزاً للتشغيل.")
+            bot.send_message(uid, f"🔁 تم تحويل `{original_name}` تلقائياً إلى `{final_name}` ليصبح جاهزاً للتشغيل.", parse_mode="Markdown")
         else:
             final_name = original_name
         with open(os.path.join(folder, final_name), "wb") as f:
@@ -485,6 +492,7 @@ def receive_website_files(message):
         file_info = bot.get_file(message.document.file_id)
         content = bot.download_file(file_info.file_path)
         name = message.document.file_name.lower()
+        
         if name.endswith('.zip'):
             zip_path = os.path.join(web_dir, "temp.zip")
             with open(zip_path, "wb") as f:
@@ -496,7 +504,7 @@ def receive_website_files(message):
         else:
             with open(os.path.join(web_dir, message.document.file_name), "wb") as f:
                 f.write(content)
-            bot.send_message(uid, f"✅ تم رفع `{message.document.file_name}`.")
+            bot.send_message(uid, f"✅ تم رفع `{message.document.file_name}`.", parse_mode="Markdown")
     except Exception as e:
         bot.send_message(uid, f"❌ فشل رفع الموقع: {str(e)}")
 
@@ -508,12 +516,12 @@ def receive_manual_invoice(message, days, price, method_name):
         bot.send_message(uid, "⏳ **تم استلام صورة السند بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
         bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
                        caption=f"💰 **طلب شحن يدوي جديد:**\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n🏦 طريقة الدفع: {method_name}\n📦 الباقة المطلوبة: `{days} يوم`\n💵 القيمة: **{price}**",
-                       reply_markup=markup)
+                       reply_markup=markup, parse_mode="Markdown")
     elif message.text:
         bot.send_message(uid, "⏳ **تم استلام بيانات التحويل بنجاح وجاري إرسالها للمطور (حافظ) للمراجعة والتفعيل...**")
         bot.send_message(ADMIN_ID,
                          f"💰 **طلب شحن يدوي (بيانات نصية):**\n📄 النص: {message.text}\n👤 الاسم: {message.from_user.first_name}\n🆔 الأيدي: `{uid}`\n🏦 طريقة الدفع: {method_name}\n📦 الباقة: `{days} يوم`\n💵 القيمة: **{price}**",
-                         reply_markup=markup)
+                         reply_markup=markup, parse_mode="Markdown")
     else:
         bot.send_message(uid, "❌ خطأ: لم تقم بإرسال صورة سند أو نص واضح، يرجى إعادة المحاولة من قائمة التفعيل.")
 
@@ -548,16 +556,6 @@ def serve_website(user_id, filename='index.html'):
     except:
         abort(404)
 
-# ================= Webhook =================
-@app.route(f"/{TOKEN}", methods=["POST"])
-def telegram_webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return "OK", 200
-    return "Invalid Request", 403
-
 @app.route("/")
 def home():
     return "🟢 Virtual Server Pro Is Running Successfully 24/7!"
@@ -565,16 +563,20 @@ def home():
 # ================= نقطة البداية =================
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 10000))
-    render_url = os.environ.get("RENDER_EXTERNAL_URL")
-    if render_url:
-        try:
-            bot.remove_webhook()
-            time.sleep(1)
-            bot.set_webhook(url=f"{render_url}/{TOKEN}")
-            logger.info(f"✅ Webhook set to {render_url}/{TOKEN}")
-        except Exception as e:
-            logger.error(f"❌ Webhook error: {e}")
-    else:
-        logger.warning("⚠️ RENDER_EXTERNAL_URL not set")
-    logger.info(f"📡 Server running on port {port}")
-    serve(app, host='0.0.0.0', port=port)
+    
+    # إزالة أي webhook موجود
+    bot.remove_webhook()
+    print("🤖 Webhook removed, starting in polling mode...")
+    
+    # تشغيل Flask في thread منفصل
+    def run_flask():
+        serve(app, host='0.0.0.0', port=port)
+    
+    flask_thread = Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    print(f"🌐 Flask server running on port {port}")
+    
+    # تشغيل البوت على Polling
+    print("✅ Bot is ready and waiting for commands...")
+    bot.infinity_polling(timeout=20, long_polling_timeout=5)
